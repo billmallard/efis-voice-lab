@@ -1,0 +1,10 @@
+# Optional: NVIDIA GPU for Ollama (needs the NVIDIA container toolkit).
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

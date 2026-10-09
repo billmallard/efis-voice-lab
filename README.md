@@ -1,5 +1,7 @@
 # EFIS Voice Lab
 
+[![ci](https://github.com/billmallard/efis-voice-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/billmallard/efis-voice-lab/actions/workflows/ci.yml)
+
 A local, free-to-run lab for **building and testing a voice AI agent backed by RAG**.
 
 The agent answers spoken questions, including over a phone line, about the open-source
@@ -29,9 +31,24 @@ caused the failure** (STT, retrieval, generation, policy, latency, turn-taking, 
 Default stack, all local and swappable through config: Python 3.11+ / `uv`, Docker Compose, Qdrant, Ollama
 (embeddings + agent LLM), FastMCP, FastAPI, Pipecat, faster-whisper, Piper/Kokoro, and Asterisk.
 
+## Quickstart
+
+Requires Docker and [uv](https://docs.astral.sh/uv/).
+
+```sh
+uv sync --all-extras
+docker compose up -d --wait          # Qdrant + Ollama (add -f docker-compose.gpu.yml for NVIDIA)
+uv run python scripts/smoke.py       # embed, store, and retrieve by paraphrase; pulls the model on first run
+uv run python scripts/check_libs.py  # versions + API surface of ragas / fastmcp / pipecat / qdrant
+```
+
+Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
+point the lab at services elsewhere, such as a home-lab server.
+
 ## Status
 
-Planning. The work is tracked as [milestones M0–M9](../../milestones). The full plan is in [docs/PLAN.md](docs/PLAN.md).
+M0 (setup) is done. The work is tracked as [milestones M0–M9](../../milestones) and on the
+[project board](https://github.com/users/billmallard/projects/19). The full plan is in [docs/PLAN.md](docs/PLAN.md).
 
 | Milestone | Scope |
 |---|---|
