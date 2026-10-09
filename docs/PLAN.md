@@ -97,11 +97,11 @@ efis-voice-lab/
 **Include** (configured in `sources.yaml`, each with an `origin` tag):
 - billmallard/pyEfis (origin `fork`): `README.rst`, `INSTALLING.md`, `ANDROID.md`, `docs/**`, and the commented YAML config examples under `src/pyefis/config/`
 - makerplane/pyEfis upstream (origin `upstream`): same paths, for testing fork-vs-upstream disambiguation
-- makerplane/FIX-Gateway: README and docs
+- makerplane/FIX-Gateway: README and `doc/`
 - makerplane/Documentation
 - billmallard/makerplane-data: docs, including the architecture disclosure
 
-**Exclude (for now):** `CLAUDE.md`, `STRUCTURAL_REVIEW.md`, source code other than config examples, test files. `CLAUDE.md` may come back later as a deliberate prompt-injection test case.
+**Exclude (for now):** `CLAUDE.md`, `STRUCTURAL_REVIEW.md`, the fork's `docs/archive/` and `docs/images/`, source code other than config examples, test files. `CLAUDE.md` may come back later as a deliberate prompt-injection test case.
 
 **Chunking**
 - Markdown/RST: split by heading, with the heading path kept as metadata.

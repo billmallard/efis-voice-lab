@@ -42,18 +42,27 @@ uv run python scripts/smoke.py       # embed, store, and retrieve by paraphrase;
 uv run python scripts/check_libs.py  # versions + API surface of ragas / fastmcp / pipecat / qdrant
 ```
 
+Build and query the docs index (sources in [config/sources.yaml](config/sources.yaml)):
+
+```sh
+uv run lab ingest                     # clone, chunk, embed, upsert; re-runs skip unchanged sources
+uv run lab stats                      # chunks per source and commit
+uv run lab query "Do I need a GPU to run pyEfis?" --origin fork
+uv run python scripts/check_index.py  # metadata completeness, exclusions, probe queries
+```
+
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
 point the lab at services elsewhere, such as a home-lab server.
 
 ## Status
 
-M0 (setup) is done. The work is tracked as [milestones M0–M9](../../milestones) and on the
+M0 (setup) and M1 (ingestion) are done. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
 [project board](https://github.com/users/billmallard/projects/19). The full plan is in [docs/PLAN.md](docs/PLAN.md).
 
 | Milestone | Scope |
 |---|---|
-| M0 | Setup and library spikes |
-| M1 | Ingestion |
+| M0 ✓ | Setup and library spikes |
+| M1 ✓ | Ingestion: 5 repos, 1,940 chunks |
 | M2 | Retrieval service (MCP + REST) |
 | M3 | Golden set + L1 retrieval suite |
 | M4 | Text agent + L2 suite |

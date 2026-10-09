@@ -16,8 +16,9 @@ jobs:
       - run: uv run pytest -q tests/unit
       - run: uv run python scripts/check_libs.py
 
-  smoke:
+  services:
     # M0 acceptance: services come up healthy; embed + retrieve one sentence.
+    # M1 acceptance on the small sources (the full corpus is ~10 min of CPU embedding).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -26,5 +27,12 @@ jobs:
       - run: scripts/ci/pull_images.sh
       - run: docker compose up -d --wait
       - run: uv run python scripts/smoke.py
+      - run: uv run lab ingest --source makerplane/FIX-Gateway --source makerplane/Documentation
+      - name: re-ingest is a no-op
+        run: |
+          out=$(uv run lab ingest --source makerplane/FIX-Gateway --source makerplane/Documentation)
+          echo "$out"
+          test -z "$(echo "$out" | grep -v '^up-to-date')"
+      - run: uv run python scripts/check_index.py --sources makerplane/FIX-Gateway makerplane/Documentation
       - if: failure()
         run: docker compose logs

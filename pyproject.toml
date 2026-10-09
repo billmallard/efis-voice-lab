@@ -12,6 +12,9 @@ dependencies = [
     "qdrant-client",
 ]
 
+[project.scripts]
+lab = "lab.cli:main"
+
 [project.optional-dependencies]
 # Pulled in per milestone; M0 only checks they install and import.
 # ragas 0.4.3 imports langchain_community.chat_models.vertexai, removed in langchain-community 0.4.
