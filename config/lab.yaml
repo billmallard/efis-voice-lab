@@ -1,8 +1,11 @@
 # Lab configuration. Every model is swappable; nothing is hard-coded in code.
 # Thresholds are initial guesses -- calibrate after the first baseline run.
+endpoints:   # override with LAB_OLLAMA_URL / LAB_QDRANT_URL
+  ollama: http://localhost:11434
+  qdrant: http://localhost:6333
 models:
-  embedding: {provider: ollama, name: nomic-embed-text}
-  agent_llm: {provider: ollama, name: null}   # 8B-class instruct model, chosen in M0
+  embedding: {provider: ollama, name: nomic-embed-text}   # pulled on first use
+  agent_llm: {provider: ollama, name: null}   # 8B-class instruct model, chosen in M4
   judge_llm: {provider: null, name: null}     # hosted recommended; logged with every run
   stt: {provider: faster-whisper, size: small}
   tts: {provider: piper, voice: null}

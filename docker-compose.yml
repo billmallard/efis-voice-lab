@@ -1,0 +1,35 @@
+# Local lab services. `docker compose up -d --wait` returns once both are healthy.
+# Models are pulled on first use by the clients (lab/embeddings.py), so
+# config/lab.yaml stays the only place a model is named.
+# GPU hosts: add `-f docker-compose.gpu.yml`.
+name: efis-voice-lab
+
+services:
+  qdrant:
+    image: qdrant/qdrant:${QDRANT_TAG:-v1.19.2}
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    healthcheck:
+      # The image ships bash but no curl/wget.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /readyz HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama:${OLLAMA_TAG:-0.40.2}
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  qdrant_storage:
+  ollama_models:
