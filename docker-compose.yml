@@ -6,7 +6,7 @@ name: efis-voice-lab
 
 services:
   qdrant:
-    image: qdrant/qdrant:${QDRANT_TAG:-latest}
+    image: qdrant/qdrant:${QDRANT_TAG:-v1.19.2}
     ports:
       - "${QDRANT_PORT:-6333}:6333"
     volumes:
@@ -19,7 +19,7 @@ services:
       retries: 20
 
   ollama:
-    image: ollama/ollama:${OLLAMA_TAG:-latest}
+    image: ollama/ollama:${OLLAMA_TAG:-0.40.2}
     ports:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
