@@ -1,0 +1,19 @@
+# Corpus sources. Each chunk carries repo, origin, branch, commit_sha, path,
+# heading_path, indexed_at.
+exclude: [CLAUDE.md, STRUCTURAL_REVIEW.md]
+sources:
+  - repo: billmallard/pyEfis
+    origin: fork
+    paths: [README.rst, INSTALLING.md, ANDROID.md, "docs/**", "src/pyefis/config/**/*.yaml"]
+  - repo: makerplane/pyEfis
+    origin: upstream
+    paths: [README.rst, INSTALLING.md, ANDROID.md, "docs/**", "src/pyefis/config/**/*.yaml"]
+  - repo: makerplane/FIX-Gateway
+    origin: upstream
+    paths: [README.md, "docs/**"]
+  - repo: makerplane/Documentation
+    origin: upstream
+    paths: ["**/*.md", "**/*.rst"]
+  - repo: billmallard/makerplane-data
+    origin: fork
+    paths: ["docs/**"]

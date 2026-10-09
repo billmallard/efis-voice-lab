@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+# runtime data
+data/
+sources_cache/
+qdrant_storage/
+ollama/
+# test output
+results/
+output.xml
+log.html
+report.html
+*.wav
+!golden/**/*.wav

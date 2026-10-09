@@ -1,0 +1,16 @@
+# Lab configuration. Every model is swappable; nothing is hard-coded in code.
+# Thresholds are initial guesses -- calibrate after the first baseline run.
+models:
+  embedding: {provider: ollama, name: nomic-embed-text}
+  agent_llm: {provider: ollama, name: null}   # 8B-class instruct model, chosen in M0
+  judge_llm: {provider: null, name: null}     # hosted recommended; logged with every run
+  stt: {provider: faster-whisper, size: small}
+  tts: {provider: piper, voice: null}
+retrieval: {top_k: 5, p95_budget_ms: 300}
+thresholds:
+  context_precision: 0.7
+  context_recall: 0.7
+  faithfulness: 0.8
+  speakability: 0.8
+  stt_wer_max: 0.25
+  time_to_first_audio_ms: 1500
