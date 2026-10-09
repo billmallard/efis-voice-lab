@@ -1,19 +1,37 @@
 # Corpus sources. Each chunk carries repo, origin, branch, commit_sha, path,
-# heading_path, indexed_at.
-exclude: [CLAUDE.md, STRUCTURAL_REVIEW.md]
+# heading_path, indexed_at (plus url, doc_type, embedding_model).
+#
+# `paths` are globs relative to the repo root; only .md, .rst, .yaml and .yml
+# files are parsed. `exclude` applies to every source: bare names match a file's
+# basename anywhere, globs match the repo-relative path.
+exclude:
+  - CLAUDE.md                 # agent instructions, not docs (may return as a prompt-injection case)
+  - STRUCTURAL_REVIEW.md
+  - "docs/archive/**"         # session handoffs
+  - "docs/images/**"          # screenshot evidence READMEs
+
 sources:
   - repo: billmallard/pyEfis
+    branch: master
     origin: fork
-    paths: [README.rst, INSTALLING.md, ANDROID.md, "docs/**", "src/pyefis/config/**/*.yaml"]
+    paths: [README.rst, INSTALLING.md, ANDROID.md, "docs/**", "src/pyefis/config/**"]
+
   - repo: makerplane/pyEfis
+    branch: master
     origin: upstream
-    paths: [README.rst, INSTALLING.md, ANDROID.md, "docs/**", "src/pyefis/config/**/*.yaml"]
+    paths: [README.rst, INSTALLING.md, ANDROID.md, "docs/**", "src/pyefis/config/**"]
+
   - repo: makerplane/FIX-Gateway
+    branch: master
     origin: upstream
-    paths: [README.md, "docs/**"]
+    paths: [README.md, "doc/**"]
+
   - repo: makerplane/Documentation
+    branch: master
     origin: upstream
-    paths: ["**/*.md", "**/*.rst"]
+    paths: ["**"]
+
   - repo: billmallard/makerplane-data
+    branch: main
     origin: fork
-    paths: ["docs/**"]
+    paths: [README.md, "docs/**"]

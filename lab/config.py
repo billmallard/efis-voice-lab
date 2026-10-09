@@ -29,10 +29,25 @@ class Retrieval(BaseModel):
     p95_budget_ms: int = 300
 
 
+class Index(BaseModel):
+    collection: str = "efis_docs"
+
+
+class Ingest(BaseModel):
+    cache_dir: Path = Path("data/sources")
+    max_chunk_chars: int = 1500
+    min_chunk_chars: int = 40
+
+    def cache_path(self) -> Path:
+        return self.cache_dir if self.cache_dir.is_absolute() else ROOT / self.cache_dir
+
+
 class LabConfig(BaseModel):
     endpoints: Endpoints = Endpoints()
     models: dict[str, ModelRef]
     retrieval: Retrieval = Retrieval()
+    index: Index = Index()
+    ingest: Ingest = Ingest()
     thresholds: dict[str, float] = {}
 
 

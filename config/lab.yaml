@@ -4,12 +4,23 @@ endpoints:   # override with LAB_OLLAMA_URL / LAB_QDRANT_URL
   ollama: http://localhost:11434
   qdrant: http://localhost:6333
 models:
-  embedding: {provider: ollama, name: nomic-embed-text}   # pulled on first use
+  embedding:                     # pulled on first use
+    provider: ollama
+    name: nomic-embed-text
+    document_prefix: "search_document: "   # nomic task prefixes; "" for models without them
+    query_prefix: "search_query: "
+    batch_size: 32
   agent_llm: {provider: ollama, name: null}   # 8B-class instruct model, chosen in M4
   judge_llm: {provider: null, name: null}     # hosted recommended; logged with every run
   stt: {provider: faster-whisper, size: small}
   tts: {provider: piper, voice: null}
 retrieval: {top_k: 5, p95_budget_ms: 300}
+index:
+  collection: efis_docs
+ingest:
+  cache_dir: data/sources        # shallow clones, relative to the repo root
+  max_chunk_chars: 1500          # longer sections split on paragraph boundaries
+  min_chunk_chars: 40            # shorter sections (bare headings) are dropped
 thresholds:
   context_precision: 0.7
   context_recall: 0.7

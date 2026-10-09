@@ -29,7 +29,7 @@ def main() -> int:
     qdrant = QdrantClient(url=cfg.endpoints.qdrant)
     collection = f"smoke_{uuid.uuid4().hex[:8]}"
 
-    vectors = emb.embed(DOCS)
+    vectors = emb.embed_documents(DOCS)
     dim = len(vectors[0])
     print(f"embedding model {emb.name}: {len(vectors)} vectors, dim {dim}")
 
@@ -46,7 +46,7 @@ def main() -> int:
             wait=True,
         )
         t0 = time.perf_counter()
-        hits = qdrant.query_points(collection, query=emb.embed([QUERY])[0], limit=3).points
+        hits = qdrant.query_points(collection, query=emb.embed_query(QUERY), limit=3).points
         ms = (time.perf_counter() - t0) * 1000
         print(f"query: {QUERY!r} ({ms:.0f} ms incl. embedding)")
         for h in hits:
