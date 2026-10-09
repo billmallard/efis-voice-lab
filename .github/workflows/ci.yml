@@ -23,8 +23,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
       - run: uv sync --locked
-      # Docker Hub auth can time out on runners; retry the pull before failing.
-      - run: for i in 1 2 3; do docker compose pull && break || sleep 15; done
+      - run: scripts/ci/pull_images.sh
       - run: docker compose up -d --wait
       - run: uv run python scripts/smoke.py
       - if: failure()
