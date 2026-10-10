@@ -88,6 +88,11 @@ class AgentProcessor(FrameProcessor):
     `TurnLog`'s timestamps come from."""
 
     TRANSCRIPT_GRACE_S = 0.15
+    # Whisper runs behind real time on CPU (~2 s a segment). The end-of-turn strategy
+    # needs only one transcript, so a two-sentence question could be answered from its
+    # first sentence. Wait until every VAD segment has been transcribed, up to this
+    # long: a segment of pure noise yields no transcript at all.
+    SEGMENT_WAIT_MAX_S = 10.0
 
     def __init__(self, agent: Any, log: TurnLog, **kwargs: Any):
         super().__init__(**kwargs)
@@ -97,6 +102,11 @@ class AgentProcessor(FrameProcessor):
         self._speaking: Turn | None = None         # the turn whose audio is playing
         self._fragments: list[str] = []            # STT segments of the turn in progress
         self._t_stop: float | None = None           # end of the caller's turn, unanswered
+        self._segments = 0                          # VAD segments since the last answer
+        self._transcribed = 0                       # ... and transcripts received for them
+        self._user_speaking = False                 # VAD: the caller is mid-utterance
+        self._handed_off = False                    # turn given to the agent, no new speech yet
+        self.late_transcripts: list[str] = []       # arrived after their turn was answered
         self._answer_task: asyncio.Task | None = None
 
     async def speak(self, text: str, turn: Turn) -> None:
@@ -115,8 +125,12 @@ class AgentProcessor(FrameProcessor):
                 self.log.turns.append(turn)
             if turn.t_user_started is None:
                 turn.t_user_started = now
+            self._user_speaking = True
+            self._handed_off = False
         elif isinstance(frame, VADUserStoppedSpeakingFrame):
             self.log.current().t_user_stopped = now
+            self._segments += 1
+            self._user_speaking = False
         elif isinstance(frame, InterruptionFrame):
             if self._speaking is not None and self._speaking.t_interrupted is None:
                 self._speaking.t_interrupted = now
@@ -137,6 +151,13 @@ class AgentProcessor(FrameProcessor):
 
         if isinstance(frame, TranscriptionFrame):
             # Whisper transcribes each VAD segment; collect them until the turn ends.
+            self._transcribed += 1
+            if self._handed_off:
+                # A segment of a turn that was already answered; merging it into the
+                # next question would put words in the caller's mouth.
+                if frame.text.strip():
+                    self.late_transcripts.append(frame.text.strip())
+                return
             if frame.text.strip():
                 self._fragments.append(frame.text.strip())
                 if self._t_stop is not None and self._answer_task is None:
@@ -155,23 +176,63 @@ class AgentProcessor(FrameProcessor):
 
     async def _answer(self) -> None:
         await asyncio.sleep(self.TRANSCRIPT_GRACE_S)
+        deadline = time.perf_counter() + self.SEGMENT_WAIT_MAX_S
+        # The end-of-turn strategy can fire on a transcript while the caller has already
+        # resumed; never answer mid-utterance or before every segment is transcribed.
+        while ((self._user_speaking or self._transcribed < self._segments)
+               and time.perf_counter() < deadline):
+            await asyncio.sleep(0.05)
         if not self._fragments:                 # a turn end with no words yet: keep waiting
             self._answer_task = None
             return
         fragments, self._fragments = list(self._fragments), []
+        self._segments = self._transcribed = 0
+        self._handed_off = True
         turn = self.log.current()
-        turn.t_transcript, self._t_stop = self._t_stop, None
+        # Handed to the agent now: stt_ms then covers the whole wait, segments included.
+        turn.t_transcript, self._t_stop = time.perf_counter(), None
         turn.fragments, turn.transcript = fragments, " ".join(fragments)
         try:
             result = await self.agent.ask(turn.transcript)
         except asyncio.CancelledError:
             self._fragments[:0] = fragments     # the turn goes on; its words are kept
+            self._handed_off = False
             turn.t_transcript, turn.fragments, turn.transcript = None, [], ""
             raise
         turn.agent = result
         turn.t_agent_done = time.perf_counter()
         self._answer_task = None
         await self.speak(result.spoken or result.answer, turn)
+
+
+def _eager_whisper_class():
+    """WhisperSTTService that decodes off the event loop.
+
+    Pipecat 1.12's `run_stt` calls faster-whisper's `transcribe()` in a thread, but
+    `transcribe()` returns a lazy generator and the decoding happens in the `for segment
+    in segments` loop on the event loop. Each transcription froze the pipeline for ~2 s:
+    VAD went deaf, so a caller who resumed after a short pause looked silent and the turn
+    ended mid-question (L3, fast / noisy / accented personas). Wrapping the model's
+    `transcribe` to return a list moves the decoding into the worker thread.
+    """
+    from pipecat.services.whisper.stt import WhisperSTTService
+
+    class EagerWhisperSTTService(WhisperSTTService):
+        async def run_stt(self, audio: bytes):
+            model = getattr(self, "_model", None)
+            if model is not None and not getattr(model, "_lab_eager", False):
+                lazy = model.transcribe
+
+                def eager(*args: Any, **kwargs: Any):
+                    segments, info = lazy(*args, **kwargs)
+                    return list(segments), info
+
+                model.transcribe = eager
+                model._lab_eager = True
+            async for frame in super().run_stt(audio):
+                yield frame
+
+    return EagerWhisperSTTService
 
 
 def build_services(cfg: LabConfig) -> tuple[Any, Any, Any]:
@@ -185,7 +246,7 @@ def build_services(cfg: LabConfig) -> tuple[Any, Any, Any]:
         raise ValueError(f"unsupported STT provider: {stt_ref.provider!r}")
     from pipecat.services.whisper.stt import WhisperSTTService
 
-    stt = WhisperSTTService(
+    stt = _eager_whisper_class()(
         settings=WhisperSTTService.Settings(model=stt_extra.get("size", "small.en"),
                                             hotwords=stt_extra.get("hotwords"),
                                             initial_prompt=stt_extra.get("initial_prompt")),
