@@ -138,7 +138,12 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
                                  else None)
         print(f"worksheet: {out}")
         return 0
-    report = calibration.score(Path(args.path))
+    if args.action == "rejudge":
+        out = calibration.rejudge(config.load(), Path(args.path), args.judges.split(","),
+                                  set(args.ids.split(",")) if args.ids else None)
+        print(f"rejudged run: {out}")
+        return 0
+    report = calibration.score(Path(args.path), Path(args.run) if args.run else None)
     print(json.dumps(report, indent=2))
     return 0
 
@@ -181,12 +186,16 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_ask)
 
     p = sub.add_parser("calibrate", help="judge calibration worksheet: export, then score")
-    p.add_argument("action", choices=["export", "score"])
+    p.add_argument("action", choices=["export", "score", "rejudge"])
     p.add_argument("path", nargs="?",
                    help="export: L2 run JSON (default results/L2/latest.json); "
-                        "score: the filled-in worksheet")
+                        "score: the filled-in worksheet; rejudge: the run JSON")
     p.add_argument("-n", type=int, default=20, help="cases to sample (export)")
     p.add_argument("--l1-baseline", help="L1 run JSON with the Ragas precision to compare")
+    p.add_argument("--run", help="score: compare against this run instead of the worksheet's")
+    p.add_argument("--judges", default="policy,correctness,speakability",
+                   help="rejudge: comma-separated judges to re-run")
+    p.add_argument("--ids", help="rejudge: only these case ids")
     p.set_defaults(fn=cmd_calibrate)
 
     args = ap.parse_args(argv)
