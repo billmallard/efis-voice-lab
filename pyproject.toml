@@ -6,6 +6,8 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+    "fastapi>=0.143.0",
+    "fastmcp>=4.1.0",
     "httpx",
     "pydantic>=2",
     "pyyaml",
@@ -19,7 +21,6 @@ lab = "lab.cli:main"
 # Pulled in per milestone; M0 only checks they install and import.
 # ragas 0.4.3 imports langchain_community.chat_models.vertexai, removed in langchain-community 0.4.
 eval = ["ragas", "langchain-community<0.4"]
-mcp = ["fastmcp"]
 voice = ["pipecat-ai"]
 
 [dependency-groups]

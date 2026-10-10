@@ -18,7 +18,7 @@ jobs:
 
   services:
     # M0 acceptance: services come up healthy; embed + retrieve one sentence.
-    # M1 acceptance on the small sources (the full corpus is ~10 min of CPU embedding).
+    # M1/M2 acceptance on the small sources (the full corpus is ~10 min of CPU embedding).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,5 +34,8 @@ jobs:
           echo "$out"
           test -z "$(echo "$out" | grep -v '^up-to-date')"
       - run: uv run python scripts/check_index.py --sources makerplane/FIX-Gateway makerplane/Documentation
+      # M2: REST and MCP (stdio) as real processes return identical results. The 300 ms p95
+      # budget is enforced on the lab host; a shared runner gets a looser bound.
+      - run: uv run python scripts/check_retrieval.py --repeat 2 --budget-ms 1500
       - if: failure()
         run: docker compose logs
