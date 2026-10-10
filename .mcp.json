@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "efis-docs": {
+      "command": "uv",
+      "args": ["run", "lab", "serve-mcp"]
+    }
+  }
+}

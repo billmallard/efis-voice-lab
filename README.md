@@ -53,19 +53,29 @@ uv run lab query "Do I need a GPU to run pyEfis?" --origin fork
 uv run python scripts/check_index.py  # metadata completeness, exclusions, probe queries
 ```
 
+Serve the index. Both interfaces share one search core:
+
+```sh
+uv run lab serve-api                       # REST: POST /search, GET /source  (http://127.0.0.1:8765/docs)
+uv run lab serve-mcp                       # MCP over stdio: search_docs, get_source
+uv run python scripts/check_retrieval.py   # REST vs MCP give identical results; p95 latency
+```
+
+Opening this repo in Claude Code picks up the `efis-docs` MCP server from [.mcp.json](.mcp.json).
+
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
 point the lab at services elsewhere, such as a home-lab server.
 
 ## Status
 
-M0 (setup) and M1 (ingestion) are done. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
+M0 (setup), M1 (ingestion) and M2 (retrieval service) are done. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
 [project board](https://github.com/users/billmallard/projects/19). The full plan is in [docs/PLAN.md](docs/PLAN.md).
 
 | Milestone | Scope |
 |---|---|
 | M0 ✓ | Setup and library spikes |
 | M1 ✓ | Ingestion: 5 repos, 1,940 chunks |
-| M2 | Retrieval service (MCP + REST) |
+| M2 ✓ | Retrieval service: MCP + REST, p95 98 ms |
 | M3 | Golden set + L1 retrieval suite |
 | M4 | Text agent + L2 suite |
 | M5 | Voice agent + L3 suite + attribution report |

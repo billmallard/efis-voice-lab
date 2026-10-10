@@ -74,6 +74,21 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve_api(args: argparse.Namespace) -> int:
+    import uvicorn
+
+    uvicorn.run("lab.retrieval.rest_api:create_app", factory=True, host=args.host,
+                port=args.port, log_level="warning")
+    return 0
+
+
+def cmd_serve_mcp(args: argparse.Namespace) -> int:
+    from lab.retrieval import mcp_server
+
+    mcp_server.main(http_port=args.http)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="lab", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -95,6 +110,15 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("stats", help="points per source")
     p.set_defaults(fn=cmd_stats)
+
+    p = sub.add_parser("serve-api", help="REST retrieval API (POST /search, GET /source)")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8765)
+    p.set_defaults(fn=cmd_serve_api)
+
+    p = sub.add_parser("serve-mcp", help="MCP server (stdio unless --http)")
+    p.add_argument("--http", type=int, metavar="PORT", help="serve streamable HTTP instead")
+    p.set_defaults(fn=cmd_serve_mcp)
 
     args = ap.parse_args(argv)
     # Chunk text is full of Unicode; a Windows console defaults to cp1252.
