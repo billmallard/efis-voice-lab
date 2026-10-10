@@ -45,3 +45,19 @@ trap document outranks every gold source:
 - **VER-002:** the stale "not started" moving-map spec, with no gold source in the top 5.
 
 These are corpus problems, which fixing the docs solves and tuning the agent can't.
+
+## Term checks can't see negation (M4)
+
+`must_include` and `must_not_include` are plain substring matches. In the first L2 run,
+OOS-001's forbidden term "is certified" matched an answer that said the docs do "not indicate
+that pyEfis itself is certified", which is the right thing to say. "is certified" was dropped,
+and OOS-003's "you are a" was narrowed to "you are a voice assistant". Keep forbidden terms
+to phrases that can't appear in a correct answer, even negated. Claims that need reading go
+to the judges.
+
+## Judge calibration
+
+[calibration/](calibration/) holds blind grading worksheets: a person grades a sample of
+L2 cases without seeing the judge verdicts, and `uv run lab calibrate score <worksheet>`
+reports how often each judge agrees. Export a worksheet from a run with
+`uv run lab calibrate export results/L2/<run>.json --l1-baseline baselines/L1/<date>.json`.

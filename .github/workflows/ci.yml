@@ -47,10 +47,21 @@ jobs:
         run: |
           uv run python -c "import json; a=json.load(open('results/L1/latest.json'))['aggregate']; print(a); assert a['cases'] >= 5"
           ! grep -q 'MCP and REST differ' results/L1/robot/output.xml
+      # M4: the L2 suite with a small CPU model and the judge off. This proves the agent loop
+      # (MCP tool discovery, tool calls, deterministic checks, report) end to end; answer
+      # quality comes from the 8B baseline on the lab host.
+      - name: L2 suite (harness check)
+        run: >
+          uv run robot --nostatusrc --outputdir results/L2/robot
+          -v L2_IDS:FGW-001,FGW-002,OOS-002,CLAR-001 -v JUDGE:off
+          -v AGENT_MODEL:qwen2.5:0.5b tests/L2_agent
+      - name: L2 produced scores
+        run: |
+          uv run python -c "import json; a=json.load(open('results/L2/latest.json'))['aggregate']; print(a); assert a['cases'] == 4"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: L1-results
+          name: harness-results
           path: results/
       - if: failure()
         run: docker compose logs

@@ -74,8 +74,29 @@ uv run robot -v L1_IDS:HW-003,VER-002 tests/L1_retrieval      # a subset
 Scores go to `results/L1/latest.json`; the reference run is
 [baselines/L1/2026-10-09.json](baselines/L1/2026-10-09.json).
 
+Ask the text agent: the voice agent's prompt, LLM and MCP tools, without the audio. A
+question, or a golden id:
+
+```sh
+uv run lab ask "Do I need a GPU to run pyEfis?"
+uv run lab ask HW-003 OOS-001 --model qwen3:8b
+```
+
+Run the L2 agent suite. It judges each answer for behavior (answer, decline or clarify),
+correctness against the reference, Ragas faithfulness and relevancy, and speakability:
+
+```sh
+uv run robot --outputdir results/L2/robot tests/L2_agent
+uv run robot -v L2_IDS:CLAR-001,OOS-001 -v JUDGE:off tests/L2_agent   # subset, no judge
+```
+
+Scores go to `results/L2/latest.json`. Judge verdicts are only trusted as far as the
+[calibration](golden/calibration/) supports them.
+
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
-point the lab at services elsewhere, such as a home-lab server.
+point the lab at services elsewhere, such as a home-lab server. `LAB_AGENT_LLM_URL` points
+the agent LLM at a separate Ollama, such as a native one on a GPU host, while embeddings stay
+in Docker.
 
 ## Status
 

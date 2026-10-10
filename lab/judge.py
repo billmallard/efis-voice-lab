@@ -20,6 +20,13 @@ _SAMPLING = ("temperature", "top_p", "top_k")
 USAGE = {"requests": 0, "input_tokens": 0, "output_tokens": 0}
 
 
+def record_usage(usage: Any) -> None:
+    if usage is not None:
+        USAGE["requests"] += 1
+        USAGE["input_tokens"] += usage.input_tokens or 0
+        USAGE["output_tokens"] += usage.output_tokens or 0
+
+
 def usage_cost(cfg: LabConfig) -> dict[str, float | int]:
     extra = cfg.models["judge_llm"].model_extra or {}
     cost = (USAGE["input_tokens"] * float(extra.get("usd_per_mtok_in", 0))
@@ -42,11 +49,7 @@ def anthropic_client() -> Any:
         if sampling:
             kwargs["extra_body"] = {**kwargs.get("extra_body", {}), **sampling}
         response = await create(*args, **kwargs)
-        usage = getattr(response, "usage", None)
-        if usage is not None:
-            USAGE["requests"] += 1
-            USAGE["input_tokens"] += usage.input_tokens or 0
-            USAGE["output_tokens"] += usage.output_tokens or 0
+        record_usage(getattr(response, "usage", None))
         return response
 
     client.messages.create = create_with_sampling
@@ -62,6 +65,27 @@ def ragas_llm(cfg: LabConfig) -> Any:
     extra = ref.model_extra or {}
     return llm_factory(ref.name, provider="anthropic", client=anthropic_client(),
                        max_tokens=int(extra.get("max_tokens", 2048)))
+
+
+def ragas_embeddings(cfg: LabConfig) -> Any:
+    """The lab's own embedding model (config `models.embedding`) as a Ragas embedding, for
+    AnswerRelevancy. Its texts are questions, so they get the query prefix."""
+    import asyncio
+
+    from ragas.embeddings.base import BaseRagasEmbedding
+
+    from lab import embeddings
+
+    emb = embeddings.from_config(cfg)
+
+    class LabEmbedding(BaseRagasEmbedding):
+        def embed_text(self, text: str, **kwargs: Any) -> list[float]:
+            return emb.embed_query(text)
+
+        async def aembed_text(self, text: str, **kwargs: Any) -> list[float]:
+            return await asyncio.to_thread(emb.embed_query, text)
+
+    return LabEmbedding()
 
 
 def judge_name(cfg: LabConfig) -> str:
