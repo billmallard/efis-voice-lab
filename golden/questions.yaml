@@ -326,6 +326,11 @@
     "for users without NASR". README defects: ./MakeCIFPIndex.py exists in neither
     pyEfis repo (it's pyavtools/utils, per docs/svs_data_refresh.md), and "[Screen.PFD]
     section" is the INI-era format. The setting now lives in YAML.
+    Pack trap (checked 2026-10-10): navdata.aerocommons.org does not ship the CIFP data
+    Virtual VFR reads. Its procedures-conus pack is built from the same FAA CIFP file but
+    holds procedures in a different format, and nothing consumes it yet. The cifp-conus
+    pack is registered in makerplane-data but not built (its indexer is GPL pyavtools).
+    An answer that says to download the CIFP data from the navdata site fails.
 
 # ------------------------------------------------------------------ developer
 - id: DEV-001
