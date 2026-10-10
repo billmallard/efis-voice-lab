@@ -29,6 +29,7 @@ from pipecat.frames.frames import (
     InterruptionFrame,
     TranscriptionFrame,
     TTSSpeakFrame,
+    UserStoppedSpeakingFrame,
     VADUserStartedSpeakingFrame,
     VADUserStoppedSpeakingFrame,
 )
@@ -48,6 +49,7 @@ class Turn:
     t_bot_stopped: float | None = None
     t_interrupted: float | None = None    # caller barged in while this turn was speaking
     transcript: str = ""
+    fragments: list[str] = field(default_factory=list)   # STT segments within the turn
     agent: Any = None                     # lab.agent.text_agent.AgentTurn
 
     def timing_ms(self) -> dict[str, float | None]:
@@ -55,6 +57,8 @@ class Turn:
             return round((b - a) * 1000, 1) if a is not None and b is not None else None
 
         return {
+            # Caller's last word -> turn handed to the agent: STT plus the end-of-turn
+            # wait (voice.user_speech_timeout_s).
             "stt_ms": gap(self.t_user_stopped, self.t_transcript),
             "agent_ms": gap(self.t_transcript, self.t_agent_done),
             "tts_first_audio_ms": gap(self.t_agent_done, self.t_bot_started),
@@ -87,6 +91,7 @@ class AgentProcessor(FrameProcessor):
         self.log = log
         self._awaiting_audio: Turn | None = None   # spoke a TTSSpeakFrame, no audio yet
         self._speaking: Turn | None = None         # the turn whose audio is playing
+        self._fragments: list[str] = []            # STT segments of the turn in progress
 
     async def speak(self, text: str, turn: Turn) -> None:
         self._awaiting_audio = turn
@@ -97,10 +102,13 @@ class AgentProcessor(FrameProcessor):
         now = time.perf_counter()
         if isinstance(frame, VADUserStartedSpeakingFrame):
             turn = self.log.current()
-            if turn.t_user_stopped is not None or turn.kind != "answer":
-                turn = Turn()                       # a new utterance starts a new turn
+            # A pause inside one question is several VAD segments of the same turn; only
+            # a turn already handed to the agent (or an idle prompt) starts a new one.
+            if turn.t_transcript is not None or turn.kind != "answer":
+                turn = Turn()
                 self.log.turns.append(turn)
-            turn.t_user_started = now
+            if turn.t_user_started is None:
+                turn.t_user_started = now
         elif isinstance(frame, VADUserStoppedSpeakingFrame):
             self.log.current().t_user_stopped = now
         elif isinstance(frame, InterruptionFrame):
@@ -115,10 +123,20 @@ class AgentProcessor(FrameProcessor):
                 self._speaking.t_bot_stopped = now
                 self._speaking = None
 
-        if isinstance(frame, TranscriptionFrame) and frame.text.strip():
+        if isinstance(frame, TranscriptionFrame):
+            # Whisper transcribes each VAD segment; collect them until the turn ends.
+            if frame.text.strip():
+                self._fragments.append(frame.text.strip())
+            return
+        if isinstance(frame, UserStoppedSpeakingFrame) and self._fragments:
+            # The user-turn processor says the caller has finished (the speech timeout
+            # passed with a transcript in hand): answer the whole turn once.
+            await self.push_frame(frame, direction)
             turn = self.log.current()
             turn.t_transcript = now
-            turn.transcript = frame.text.strip()
+            turn.fragments = list(self._fragments)
+            turn.transcript = " ".join(self._fragments)
+            self._fragments.clear()
             result = await self.agent.ask(turn.transcript)
             turn.agent = result
             turn.t_agent_done = time.perf_counter()

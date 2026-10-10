@@ -134,6 +134,7 @@ class L3Keywords:
         rec = l2.evaluate(case, agent_turn)
         rec.update(id=key, kind="turn", case_id=case_id, variant=variant, persona=persona,
                    said=line, transcript=" / ".join(t.transcript for t in new),
+                   fragments=[f for t in new for f in t.fragments],
                    turn_split=len(new) > 1, turns=len(new))
         rec["turn_taking_failed"] = rec["turn_split"] or not new
         voice = main.timing_ms() if main else {}
@@ -164,14 +165,16 @@ class L3Keywords:
 
     @keyword
     def judge_voice_turn(self, key: str) -> None:
-        """The L2 judges on the agent's answer, plus STT equivalence of the transcript."""
+        """The L2 judges on the agent's answer, plus STT equivalence of the transcript to
+        what the caller actually said. (Not to the canonical question: spoken variants are
+        deliberately different phrasings, so that comparison blamed STT for the golden
+        set's own paraphrases.)"""
         self.judge_answer(key)
         if not self.judge_enabled:
             return
         rec = self.l2_results[key]
-        case = self._case(key)
         try:
-            verdict = self._run(self._judges.stt_equivalence(case.question,
+            verdict = self._run(self._judges.stt_equivalence(self._said[key],
                                                              rec["transcript"] or "(nothing)"))
             rec["stt"].update(verdict)
         except Exception as e:  # noqa: BLE001 -- a judge failure must not stop the case

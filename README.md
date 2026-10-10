@@ -94,6 +94,27 @@ Scores go to `results/L2/latest.json`; the reference run is
 [baselines/L2/2026-10-10-calibrated.json](baselines/L2/2026-10-10-calibrated.json). Judge verdicts are only trusted as far as the
 [calibration](golden/calibration/) supports them.
 
+Talk to the voice agent in a browser (WebRTC, Pipecat's prebuilt UI), then open
+http://localhost:7860:
+
+```sh
+uv run lab serve-voice
+```
+
+Run the L3 voice suite. Golden questions are synthesized as caller audio in several
+personas ([golden/personas.yaml](golden/personas.yaml): voices, accents, fast speech,
+engine noise, a mid-question pause) and spoken in real time over the websocket transport:
+
+```sh
+uv run robot --outputdir results/L3/robot tests/L3_voice
+uv run robot -v L3_IDS:HW-003 -v L3_GROUPS:variants,behavior tests/L3_voice   # a slice
+```
+
+Every failed case gets one root-cause tag (STT, turn-taking, policy, retrieval, the corpus,
+generation, speakability, latency; see [lab/harness/attribution.py](lab/harness/attribution.py)).
+`uv run lab report` renders all three layers, with tags, judge reasons and both sides'
+audio, to `results/report/index.html`.
+
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
 point the lab at services elsewhere, such as a home-lab server. `LAB_AGENT_LLM_URL` points
 the agent LLM at a separate Ollama, such as a native one on a GPU host, while embeddings stay
