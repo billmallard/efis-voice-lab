@@ -51,6 +51,16 @@ class Agent(BaseModel):
         return path.read_text(encoding="utf-8").strip()
 
 
+class Voice(BaseModel):
+    interruptions: bool = True           # caller speech stops the bot (barge-in)
+    user_speech_timeout_s: float = 0.6   # pause that still counts as the same turn
+    idle_timeout_s: float = 10.0         # caller silence before the bot re-prompts
+    idle_prompt: str = ("Are you still there? You can ask me about pyEfis, FIX Gateway, "
+                        "or navigation data.")
+    sample_rate_in: int = 16000
+    sample_rate_out: int = 24000
+
+
 class Ingest(BaseModel):
     cache_dir: Path = Path("data/sources")
     max_chunk_chars: int = 1500
@@ -66,6 +76,7 @@ class LabConfig(BaseModel):
     retrieval: Retrieval = Retrieval()
     index: Index = Index()
     agent: Agent = Agent()
+    voice: Voice = Voice()
     ingest: Ingest = Ingest()
     thresholds: dict[str, float] = {}
 

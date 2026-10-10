@@ -46,6 +46,11 @@ agent:
   speech_normalize: true         # lab/agent/speech.py: markup out, units as words, before TTS
 index:
   collection: efis_docs
+voice:
+  interruptions: true            # caller speech stops the bot (barge-in)
+  user_speech_timeout_s: 0.6     # a pause shorter than this continues the same turn
+  idle_timeout_s: 10             # caller silence before the bot re-prompts
+  idle_prompt: Are you still there? You can ask me about pyEfis, FIX Gateway, or navigation data.
 ingest:
   cache_dir: data/sources        # shallow clones, relative to the repo root
   max_chunk_chars: 1500          # longer sections split on paragraph boundaries
