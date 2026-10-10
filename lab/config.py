@@ -51,7 +51,19 @@ class LabConfig(BaseModel):
     thresholds: dict[str, float] = {}
 
 
+def load_dotenv(path: Path = ROOT / ".env") -> None:
+    """Minimal KEY=VALUE reader for the gitignored .env; real environment variables win."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
 def load(path: str | Path | None = None) -> LabConfig:
+    load_dotenv()
     path = Path(path or os.environ.get("LAB_CONFIG", DEFAULT_PATH))
     raw: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
     cfg = LabConfig.model_validate(raw)

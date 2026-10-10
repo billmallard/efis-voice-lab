@@ -63,12 +63,23 @@ uv run python scripts/check_retrieval.py   # REST vs MCP give identical results;
 
 Opening this repo in Claude Code picks up the `efis-docs` MCP server from [.mcp.json](.mcp.json).
 
+Run the L1 retrieval suite on the [golden set](golden/). Put `ANTHROPIC_API_KEY` in `.env`
+(see [.env.example](.env.example)) to turn on the Ragas judge:
+
+```sh
+uv run robot --outputdir results/L1/robot tests/L1_retrieval   # one test per golden case
+uv run robot -v L1_IDS:HW-003,VER-002 tests/L1_retrieval      # a subset
+```
+
+Scores go to `results/L1/latest.json`; the reference run is
+[baselines/L1/2026-10-09.json](baselines/L1/2026-10-09.json).
+
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
 point the lab at services elsewhere, such as a home-lab server.
 
 ## Status
 
-M0 (setup), M1 (ingestion) and M2 (retrieval service) are done. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
+M0–M3 are done: setup, ingestion, the retrieval service, and the golden set with its L1 suite. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
 [project board](https://github.com/users/billmallard/projects/19). The full plan is in [docs/PLAN.md](docs/PLAN.md).
 
 | Milestone | Scope |
@@ -76,7 +87,7 @@ M0 (setup), M1 (ingestion) and M2 (retrieval service) are done. Milestone notes 
 | M0 ✓ | Setup and library spikes |
 | M1 ✓ | Ingestion: 5 repos, 1,940 chunks |
 | M2 ✓ | Retrieval service: MCP + REST, p95 98 ms |
-| M3 | Golden set + L1 retrieval suite |
+| M3 ✓ | Golden set (35 cases, 9 doc defects) + L1 suite: hit rate 0.87 |
 | M4 | Text agent + L2 suite |
 | M5 | Voice agent + L3 suite + attribution report |
 | D1 | Published test report on Cloudflare Pages (after M5) |

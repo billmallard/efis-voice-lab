@@ -161,6 +161,12 @@ efis-voice-lab/
   expected_behavior: answer    # answer | decline | clarify
 ```
 
+As built (`golden/questions.yaml`, documented in its header): `gold_sources` match if **any**
+listed source is in the top-k, with `heading` matched as a substring of the chunk's heading
+path. There is also `must_include_any`, plus `notes` (which document misleads) and `review`
+(open questions for the maintainer). The category list adds `conflict` (the corpus contradicts
+itself or the code) and `clarify`.
+
 **The source documents are imperfect, and the golden set says so.** Where docs conflict, go stale,
 or blur "specified" with "shipped", the expected answer follows the evidence. The case records
 which document misleads, in a `notes:` field. A failure caused by a bad source doc is a finding

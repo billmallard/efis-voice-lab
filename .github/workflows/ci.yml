@@ -37,5 +37,20 @@ jobs:
       # M2: REST and MCP (stdio) as real processes return identical results. The 300 ms p95
       # budget is enforced on the lab host; a shared runner gets a looser bound.
       - run: uv run python scripts/check_retrieval.py --repeat 2 --budget-ms 1500
+      # M3: the L1 Robot suite on the cases the CI index can answer, judge off. This proves
+      # the harness end to end; gating on quality (diff against a baseline) is M7.
+      - name: L1 suite (harness check)
+        run: >
+          uv run robot --nostatusrc --outputdir results/L1/robot
+          -v L1_REPO:makerplane/FIX-Gateway -v RAGAS:off tests/L1_retrieval
+      - name: L1 produced scores and MCP matched REST
+        run: |
+          uv run python -c "import json; a=json.load(open('results/L1/latest.json'))['aggregate']; print(a); assert a['cases'] >= 5"
+          ! grep -q 'MCP and REST differ' results/L1/robot/output.xml
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: L1-results
+          path: results/
       - if: failure()
         run: docker compose logs
