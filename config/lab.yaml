@@ -1,8 +1,11 @@
 # Lab configuration. Every model is swappable; nothing is hard-coded in code.
 # Thresholds are initial guesses -- calibrate after the first baseline run.
-endpoints:   # override with LAB_OLLAMA_URL / LAB_QDRANT_URL
+endpoints:   # override with LAB_OLLAMA_URL / LAB_QDRANT_URL / LAB_AGENT_LLM_URL
   ollama: http://localhost:11434
   qdrant: http://localhost:6333
+  agent_llm: null                # null = the ollama endpoint. On a GPU host, point this at a
+                                 # native Ollama (e.g. http://localhost:11435) and leave
+                                 # embeddings on the Docker one.
 models:
   embedding:                     # pulled on first use
     provider: ollama
@@ -10,7 +13,13 @@ models:
     document_prefix: "search_document: "   # nomic task prefixes; "" for models without them
     query_prefix: "search_query: "
     batch_size: 32
-  agent_llm: {provider: ollama, name: null}   # 8B-class instruct model, chosen in M4
+  agent_llm:                     # the model under test; LAB_AGENT_MODEL overrides the name
+    provider: ollama               # ollama | anthropic (hosted, for comparison and the D2 demo)
+    name: llama3.1:8b              # M4 pick: qwen3:8b with think off never called search_docs
+    temperature: 0
+    think: null                    # true/false for models with a reasoning switch (qwen3)
+    num_ctx: 8192
+    max_tokens: 400
   judge_llm:                     # ANTHROPIC_API_KEY (.env); logged with every run
     provider: anthropic
     name: claude-haiku-4-5
@@ -20,6 +29,13 @@ models:
   stt: {provider: faster-whisper, size: small}
   tts: {provider: piper, voice: null}
 retrieval: {top_k: 5, p95_budget_ms: 300}
+agent:
+  prompt: lab/agent/prompts/system.md
+  tools: [search_docs]           # MCP tools offered to the LLM (get_source returns whole docs)
+  hidden_args: [k, repo, origin] # set by the harness, not the model: 8B models mangle filters
+                                 # (llama3.1 sent origin "null"); hits still carry origin
+  search_k: 5
+  max_tool_rounds: 3             # after this the model must answer without tools
 index:
   collection: efis_docs
 ingest:
@@ -30,7 +46,10 @@ thresholds:
   l1_hit_rate: 0.85              # share of answerable golden questions with a gold source in top-k
   context_precision: 0.7
   context_recall: 0.7
-  faithfulness: 0.8
-  speakability: 0.8
+  faithfulness: 0.8              # per case (L2) and run mean
+  answer_relevancy: 0.7          # run mean only
+  correctness: 0.8               # share of answer cases the judge passes
+  behavior_accuracy: 1.0         # answer / decline / clarify, every case
+  speakability: 0.8              # share of cases the speakability judge passes
   stt_wer_max: 0.25
   time_to_first_audio_ms: 1500
