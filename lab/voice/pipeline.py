@@ -1,6 +1,6 @@
 """The voice pipeline:
 
-    transport in -> Silero VAD -> user turns -> STT -> text agent -> TTS -> transport out
+    transport in -> Silero VAD -> STT -> user turns -> text agent -> TTS -> transport out
 
 The LLM stage is the L2 `TextAgent` wrapped as a Pipecat processor, not Pipecat's own
 LLM service, so a voice turn runs the identical prompt, model, MCP tool loop and speech
@@ -18,6 +18,7 @@ the agent turn, and whether the bot was interrupted, for L3 metrics and attribut
 
 from __future__ import annotations
 
+import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -80,10 +81,13 @@ class TurnLog:
 
 
 class AgentProcessor(FrameProcessor):
-    """Final transcription in, the agent's spoken answer out (as a TTSSpeakFrame).
+    """The caller's whole turn in, the agent's spoken answer out (as a TTSSpeakFrame).
 
-    It also sees the turn-taking frames on their way past, which is where `TurnLog`'s
-    timestamps come from."""
+    It collects STT segments until the user-turn processor ends the turn, then answers
+    once. It also sees the turn-taking frames on their way past, which is where
+    `TurnLog`'s timestamps come from."""
+
+    TRANSCRIPT_GRACE_S = 0.15
 
     def __init__(self, agent: Any, log: TurnLog, **kwargs: Any):
         super().__init__(**kwargs)
@@ -92,6 +96,8 @@ class AgentProcessor(FrameProcessor):
         self._awaiting_audio: Turn | None = None   # spoke a TTSSpeakFrame, no audio yet
         self._speaking: Turn | None = None         # the turn whose audio is playing
         self._fragments: list[str] = []            # STT segments of the turn in progress
+        self._t_stop: float | None = None           # end of the caller's turn, unanswered
+        self._answer_task: asyncio.Task | None = None
 
     async def speak(self, text: str, turn: Turn) -> None:
         self._awaiting_audio = turn
@@ -123,26 +129,49 @@ class AgentProcessor(FrameProcessor):
                 self._speaking.t_bot_stopped = now
                 self._speaking = None
 
+        if isinstance(frame, InterruptionFrame) and self._answer_task is not None:
+            # The caller started talking again before the answer was ready: drop it and
+            # keep collecting (their words go back into the turn in progress).
+            self._answer_task.cancel()
+            self._answer_task = None
+
         if isinstance(frame, TranscriptionFrame):
             # Whisper transcribes each VAD segment; collect them until the turn ends.
             if frame.text.strip():
                 self._fragments.append(frame.text.strip())
+                if self._t_stop is not None and self._answer_task is None:
+                    self._answer_task = asyncio.create_task(self._answer())
             return
-        if isinstance(frame, UserStoppedSpeakingFrame) and self._fragments:
-            # The user-turn processor says the caller has finished (the speech timeout
-            # passed with a transcript in hand): answer the whole turn once.
+        if isinstance(frame, UserStoppedSpeakingFrame):
+            # The user-turn processor says the caller has finished. It can announce that
+            # just before forwarding the transcript that decided it, so the answer waits
+            # a moment for that last fragment instead of trusting frame order.
             await self.push_frame(frame, direction)
-            turn = self.log.current()
-            turn.t_transcript = now
-            turn.fragments = list(self._fragments)
-            turn.transcript = " ".join(self._fragments)
-            self._fragments.clear()
-            result = await self.agent.ask(turn.transcript)
-            turn.agent = result
-            turn.t_agent_done = time.perf_counter()
-            await self.speak(result.spoken or result.answer, turn)
+            self._t_stop = now
+            if self._answer_task is None:
+                self._answer_task = asyncio.create_task(self._answer())
             return
         await self.push_frame(frame, direction)
+
+    async def _answer(self) -> None:
+        await asyncio.sleep(self.TRANSCRIPT_GRACE_S)
+        if not self._fragments:                 # a turn end with no words yet: keep waiting
+            self._answer_task = None
+            return
+        fragments, self._fragments = list(self._fragments), []
+        turn = self.log.current()
+        turn.t_transcript, self._t_stop = self._t_stop, None
+        turn.fragments, turn.transcript = fragments, " ".join(fragments)
+        try:
+            result = await self.agent.ask(turn.transcript)
+        except asyncio.CancelledError:
+            self._fragments[:0] = fragments     # the turn goes on; its words are kept
+            turn.t_transcript, turn.fragments, turn.transcript = None, [], ""
+            raise
+        turn.agent = result
+        turn.t_agent_done = time.perf_counter()
+        self._answer_task = None
+        await self.speak(result.spoken or result.answer, turn)
 
 
 def build_services(cfg: LabConfig) -> tuple[Any, Any, Any]:
@@ -205,7 +234,10 @@ def build_pipeline(cfg: LabConfig, transport: Any, agent: Any, log: TurnLog) -> 
         log.turns.append(turn)
         await agent_proc.speak(cfg.voice.idle_prompt, turn)
 
-    return Pipeline([transport.input(), vad, turns, stt, agent_proc, tts,
+    # The turn processor sits after STT: its end-of-turn strategy waits for a transcript,
+    # and frames only flow downstream. Placed before STT it never saw one, and every turn
+    # ended on its 5 s give-up timer instead (the first full L3 run's STT p50: 5.0 s).
+    return Pipeline([transport.input(), vad, stt, turns, agent_proc, tts,
                      transport.output()])
 
 
