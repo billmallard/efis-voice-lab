@@ -1,4 +1,4 @@
-"""`lab` command line: ingest, query, stats."""
+"""`lab` command line: ingest, query, stats, serve-api, serve-mcp, ask."""
 
 from __future__ import annotations
 
@@ -89,6 +89,60 @@ def cmd_serve_mcp(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ask(args: argparse.Namespace) -> int:
+    import asyncio
+    import json
+
+    from lab.agent.text_agent import open_agent
+    from lab.harness import golden
+
+    cfg = config.load()
+    if args.model:
+        cfg.models["agent_llm"].name = args.model
+    cases = {c.id: c for c in golden.load()}
+    questions = [cases[q].question if q in cases else q for q in args.question]
+
+    async def run() -> None:
+        async with open_agent(cfg) as agent:
+            for q in questions:
+                turn = await agent.ask(q)
+                if args.json:
+                    print(json.dumps(turn.model_dump(exclude={"contexts"}), indent=2))
+                    continue
+                print(f"Q: {q}")
+                for c in turn.tool_calls:
+                    top = "; ".join(f"{h['repo'].split('/')[1]}:{h['path']}" for h in c.hits[:3])
+                    print(f"   -> {c.name}({json.dumps(c.args)}) {c.ms:.0f} ms"
+                          + (f" ERROR {c.error}" if c.error else f"  [{top}]"))
+                print(f"A: {turn.answer}")
+                t = turn.timing
+                print(f"   {turn.model}, {turn.rounds} rounds, stop={turn.stop}, "
+                      f"{t['total_ms']:.0f} ms (llm {t['llm_ms']:.0f}, "
+                      f"first {t['first_llm_ms']:.0f}), {turn.usage['input_tokens']} in / "
+                      f"{turn.usage['output_tokens']} out\n")
+
+    asyncio.run(run())
+    return 0
+
+
+def cmd_calibrate(args: argparse.Namespace) -> int:
+    import json
+    from pathlib import Path
+
+    from lab.harness import calibration
+
+    if args.action == "export":
+        run = Path(args.path or config.ROOT / "results" / "L2" / "latest.json")
+        out = calibration.export(config.load(), run, n=args.n,
+                                 l1_baseline=Path(args.l1_baseline) if args.l1_baseline
+                                 else None)
+        print(f"worksheet: {out}")
+        return 0
+    report = calibration.score(Path(args.path))
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="lab", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -119,6 +173,21 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("serve-mcp", help="MCP server (stdio unless --http)")
     p.add_argument("--http", type=int, metavar="PORT", help="serve streamable HTTP instead")
     p.set_defaults(fn=cmd_serve_mcp)
+
+    p = sub.add_parser("ask", help="ask the text agent (question text or golden id)")
+    p.add_argument("question", nargs="+", help="question text, or golden ids such as HW-003")
+    p.add_argument("--model", help="agent LLM name (default: models.agent_llm.name)")
+    p.add_argument("--json", action="store_true", help="print the full AgentTurn")
+    p.set_defaults(fn=cmd_ask)
+
+    p = sub.add_parser("calibrate", help="judge calibration worksheet: export, then score")
+    p.add_argument("action", choices=["export", "score"])
+    p.add_argument("path", nargs="?",
+                   help="export: L2 run JSON (default results/L2/latest.json); "
+                        "score: the filled-in worksheet")
+    p.add_argument("-n", type=int, default=20, help="cases to sample (export)")
+    p.add_argument("--l1-baseline", help="L1 run JSON with the Ragas precision to compare")
+    p.set_defaults(fn=cmd_calibrate)
 
     args = ap.parse_args(argv)
     # Chunk text is full of Unicode; a Windows console defaults to cp1252.

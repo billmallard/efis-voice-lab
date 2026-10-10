@@ -1,14 +1,17 @@
 # ruff: noqa: N999  -- Robot convention: module named after its library class
 """Robot Framework keyword library for the EFIS Voice Lab harness.
 
-Import it in a suite and it generates one test per scored golden case (it is also a
-listener), so `robot tests/L1_retrieval` runs the whole golden set without the cases
-being duplicated in .robot files. Hand-written tests in the suite (latency, aggregates)
-run after the generated ones.
+Import it in a suite and it generates one test per golden case (it is also a
+listener), so `robot tests/L1_retrieval` or `robot tests/L2_agent` runs the whole golden
+set without the cases being duplicated in .robot files. Hand-written tests in the suite
+(latency, aggregates) run after the generated ones.
 
-Retrieval goes through the real interfaces: the REST API (`lab serve-api`, a separate
-process) for every query, and the MCP server over stdio (`lab serve-mcp`) to check
-both return the same results.
+L1: retrieval goes through the real interfaces: the REST API (`lab serve-api`, a
+separate process) for every query, and the MCP server over stdio (`lab serve-mcp`) to
+check both return the same results.
+
+L2: the text agent (lab/agent/text_agent.py) answers each question through the same MCP
+server. Its keywords live in l2_keywords.py.
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ import sys
 import threading
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -31,6 +35,7 @@ from robot.api.deco import keyword, library
 from lab import config
 from lab.config import ROOT
 from lab.harness import golden, l1
+from lab.harness.l2_keywords import L2Keywords
 
 RESULTS_DIR = ROOT / "results"
 
@@ -45,9 +50,16 @@ class _GoldenTestGenerator:
         self.done: set[str] = set()
 
     def start_suite(self, data, result) -> None:
-        if self.lib.layer != "L1" or data.longname in self.done:
+        if data.longname in self.done:
             return
         self.done.add(data.longname)
+        generate = {"L1": self._l1_tests, "L2": self._l2_tests}[self.lib.layer]
+        generated = generate(data)
+        # Generated cases first, so suite-level checks (latency, aggregates) see them all.
+        handwritten = [t for t in data.tests if t not in generated]
+        data.tests = generated + handwritten
+
+    def _l1_tests(self, data) -> list:
         generated = []
         for case in self.lib.cases.values():
             if not case.scored_in_l1 or not self.lib.selected(case):
@@ -70,9 +82,39 @@ class _GoldenTestGenerator:
                 test.body.create_keyword(name="Top Hit Should Come From Expected Origin",
                                          args=[case.id])
             generated.append(test)
-        # Generated cases first, so suite-level checks (latency, aggregates) see them all.
-        handwritten = [t for t in data.tests if t not in generated]
-        data.tests = generated + handwritten
+        return generated
+
+    def _l2_tests(self, data) -> list:
+        generated = []
+        for case in self.lib.cases.values():
+            if not self.lib.selected(case):
+                continue
+            test = data.tests.create(
+                name=f"{case.id} {case.question}",
+                doc=case.notes or "",
+                tags=[case.id, case.category, case.expected_behavior, "golden",
+                      "robot:continue-on-failure",
+                      *(["trap"] if case.trap_sources else [])],
+            )
+            kw = test.body.create_keyword
+            kw(name="Ask Agent", args=[case.id])
+            kw(name="Judge Answer", args=[case.id])
+            if case.expected_behavior == "answer":
+                kw(name="Agent Should Have Searched", args=[case.id])
+                if case.gold_sources:
+                    kw(name="Agent Search Should Find Gold Source", args=[case.id])
+                kw(name="Agent Should Answer", args=[case.id])
+                kw(name="Answer Should Contain Expected Terms", args=[case.id])
+                kw(name="Answer Should Be Correct", args=[case.id])
+                kw(name="Answer Should Be Faithful", args=[case.id])
+            elif case.expected_behavior == "decline":
+                kw(name="Agent Should Decline", args=[case.id])
+                kw(name="Answer Should Contain Expected Terms", args=[case.id])
+            else:
+                kw(name="Agent Should Ask For Clarification", args=[case.id])
+            kw(name="Answer Should Be Speakable", args=[case.id])
+            generated.append(test)
+        return generated
 
 
 class _McpSession:
@@ -103,17 +145,26 @@ class _McpSession:
 
 
 @library(scope="SUITE", listener=None)
-class VoiceLabLibrary:
-    def __init__(self, layer: str = "L1", ragas: str = "auto", repo: str = "", ids: str = ""):
+class VoiceLabLibrary(L2Keywords):
+    RESULTS_DIR = RESULTS_DIR
+
+    def __init__(self, layer: str = "L1", ragas: str = "auto", repo: str = "", ids: str = "",
+                 judge: str = "", agent_model: str = ""):
         """`repo` / `ids` (comma-separated) narrow the generated cases. Robot's --include
-        cannot: tag filtering happens before the listener adds the tests."""
+        cannot: tag filtering happens before the listener adds the tests.
+
+        `judge` is the L2 name for the `ragas` switch: auto = on when ANTHROPIC_API_KEY
+        is set; on | off to force. `agent_model` overrides models.agent_llm.name."""
         self.layer = layer
         self.repo_filter = repo.strip()
         self.id_filter = {i.strip() for i in ids.split(",") if i.strip()}
         self.cfg = config.load()
         self.cases = {c.id: c for c in golden.load()}
-        self.ragas_enabled = (ragas == "on"
-                              or (ragas == "auto" and bool(os.environ.get("ANTHROPIC_API_KEY"))))
+        mode = judge or ragas
+        self.ragas_enabled = (mode == "on"
+                              or (mode == "auto" and bool(os.environ.get("ANTHROPIC_API_KEY"))))
+        self.judge_enabled = self.ragas_enabled
+        self.agent_model = agent_model.strip()
         self.k = self.cfg.retrieval.top_k
         self.ROBOT_LIBRARY_LISTENER = _GoldenTestGenerator(self)
         self._api: subprocess.Popen | None = None
@@ -126,6 +177,11 @@ class VoiceLabLibrary:
         self.results: dict[str, dict[str, Any]] = {}
         self.latencies_ms: list[float] = []
         self.started_at = datetime.now(UTC)
+        self._l2_init()
+
+    def _run(self, coro, timeout: float = 300):
+        """Run a coroutine on the library's background event loop (Robot is synchronous)."""
+        return asyncio.run_coroutine_threadsafe(coro, self._loop).result(timeout)
 
     def selected(self, case: golden.GoldenCase) -> bool:
         if self.id_filter and case.id not in self.id_filter:
@@ -319,6 +375,19 @@ class VoiceLabLibrary:
         return out
 
     def _write_scores(self) -> str:
+        path = self._write_report("L1", {
+            "aggregate": l1.aggregate(list(self.results.values()), self.latencies_ms),
+            "cases": list(self.results.values()),
+        })
+        agg = json.loads(Path(path).read_text(encoding="utf-8"))["aggregate"]
+        logger.info(f"hit rate {agg['hit_rate']}, MRR {agg['mrr']}, "
+                    f"ragas precision {agg['ragas_context_precision']}, "
+                    f"recall {agg['ragas_context_recall']}, p95 {agg['latency_ms']['p95']} ms",
+                    also_console=True)
+        return path
+
+    def _write_report(self, layer: str, body: dict[str, Any]) -> str:
+        """Run metadata shared by every layer, plus the layer's aggregate and cases."""
         from lab import judge
 
         def git(*args: str) -> str:
@@ -326,7 +395,7 @@ class VoiceLabLibrary:
                                   text=True).stdout.strip()
 
         report = {
-            "layer": "L1",
+            "layer": layer,
             "started_at": self.started_at.isoformat(timespec="seconds"),
             "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "lab_commit": git("rev-parse", "--short", "HEAD")
@@ -335,24 +404,19 @@ class VoiceLabLibrary:
                       "embedding_model": self.cfg.models["embedding"].name,
                       "sources": self._index_commits()},
             "k": self.k,
-            "judge": self._judge_name() if self.ragas_enabled else None,
-            "judge_usage": judge.usage_cost(self.cfg) if self.ragas_enabled else None,
+            "judge": self._judge_name() if self.judge_enabled else None,
+            "judge_usage": judge.usage_cost(self.cfg) if self.judge_enabled else None,
             "thresholds": {**self.cfg.thresholds,
                            "p95_budget_ms": self.cfg.retrieval.p95_budget_ms},
-            "aggregate": l1.aggregate(list(self.results.values()), self.latencies_ms),
-            "cases": list(self.results.values()),
+            **body,
         }
-        out_dir = RESULTS_DIR / "L1"
+        out_dir = RESULTS_DIR / layer
         out_dir.mkdir(parents=True, exist_ok=True)
         stamp = self.started_at.strftime("%Y%m%dT%H%M%SZ")
         path = out_dir / f"run-{stamp}.json"
         text = json.dumps(report, indent=2)
         path.write_text(text, encoding="utf-8")
         (out_dir / "latest.json").write_text(text, encoding="utf-8")
-        agg = report["aggregate"]
-        logger.info(f"L1 scores written to {path}", also_console=True)
-        logger.info(f"hit rate {agg['hit_rate']}, MRR {agg['mrr']}, "
-                    f"ragas precision {agg['ragas_context_precision']}, "
-                    f"recall {agg['ragas_context_recall']}, p95 {agg['latency_ms']['p95']} ms, "
-                    f"judge {report['judge_usage']}", also_console=True)
+        logger.info(f"{layer} scores written to {path}; judge {report['judge_usage']}",
+                    also_console=True)
         return str(path)

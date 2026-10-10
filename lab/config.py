@@ -22,6 +22,11 @@ class ModelRef(BaseModel):
 class Endpoints(BaseModel):
     ollama: str = "http://localhost:11434"
     qdrant: str = "http://localhost:6333"
+    agent_llm: str | None = None  # None = ollama
+
+    @property
+    def agent(self) -> str:
+        return self.agent_llm or self.ollama
 
 
 class Retrieval(BaseModel):
@@ -31,6 +36,18 @@ class Retrieval(BaseModel):
 
 class Index(BaseModel):
     collection: str = "efis_docs"
+
+
+class Agent(BaseModel):
+    prompt: Path = Path("lab/agent/prompts/system.md")
+    tools: list[str] = ["search_docs"]
+    hidden_args: list[str] = ["k", "repo", "origin"]
+    search_k: int = 5
+    max_tool_rounds: int = 3
+
+    def prompt_text(self) -> str:
+        path = self.prompt if self.prompt.is_absolute() else ROOT / self.prompt
+        return path.read_text(encoding="utf-8").strip()
 
 
 class Ingest(BaseModel):
@@ -47,6 +64,7 @@ class LabConfig(BaseModel):
     models: dict[str, ModelRef]
     retrieval: Retrieval = Retrieval()
     index: Index = Index()
+    agent: Agent = Agent()
     ingest: Ingest = Ingest()
     thresholds: dict[str, float] = {}
 
@@ -67,8 +85,10 @@ def load(path: str | Path | None = None) -> LabConfig:
     path = Path(path or os.environ.get("LAB_CONFIG", DEFAULT_PATH))
     raw: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
     cfg = LabConfig.model_validate(raw)
-    for key in ("ollama", "qdrant"):
+    for key in ("ollama", "qdrant", "agent_llm"):
         env = os.environ.get(f"LAB_{key.upper()}_URL")
         if env:
             setattr(cfg.endpoints, key, env)
+    if os.environ.get("LAB_AGENT_MODEL"):
+        cfg.models["agent_llm"].name = os.environ["LAB_AGENT_MODEL"]
     return cfg

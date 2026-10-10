@@ -74,12 +74,34 @@ uv run robot -v L1_IDS:HW-003,VER-002 tests/L1_retrieval      # a subset
 Scores go to `results/L1/latest.json`; the reference run is
 [baselines/L1/2026-10-09.json](baselines/L1/2026-10-09.json).
 
+Ask the text agent: the voice agent's prompt, LLM and MCP tools, without the audio. A
+question, or a golden id:
+
+```sh
+uv run lab ask "Do I need a GPU to run pyEfis?"
+uv run lab ask HW-003 OOS-001 --model qwen3:8b
+```
+
+Run the L2 agent suite. It judges each answer for behavior (answer, decline or clarify),
+correctness against the reference, Ragas faithfulness and relevancy, and speakability:
+
+```sh
+uv run robot --outputdir results/L2/robot tests/L2_agent
+uv run robot -v L2_IDS:CLAR-001,OOS-001 -v JUDGE:off tests/L2_agent   # subset, no judge
+```
+
+Scores go to `results/L2/latest.json`; the reference run is
+[baselines/L2/2026-10-10.json](baselines/L2/2026-10-10.json). Judge verdicts are only trusted as far as the
+[calibration](golden/calibration/) supports them.
+
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
-point the lab at services elsewhere, such as a home-lab server.
+point the lab at services elsewhere, such as a home-lab server. `LAB_AGENT_LLM_URL` points
+the agent LLM at a separate Ollama, such as a native one on a GPU host, while embeddings stay
+in Docker.
 
 ## Status
 
-M0–M3 are done: setup, ingestion, the retrieval service, and the golden set with its L1 suite. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
+M0–M3 are done: setup, ingestion, the retrieval service, and the golden set with its L1 suite. M4 (text agent and L2 suite) is built and baselined; its judge calibration awaits a human grading pass. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
 [project board](https://github.com/users/billmallard/projects/19). The full plan is in [docs/PLAN.md](docs/PLAN.md).
 
 | Milestone | Scope |
@@ -88,7 +110,7 @@ M0–M3 are done: setup, ingestion, the retrieval service, and the golden set wi
 | M1 ✓ | Ingestion: 5 repos, 1,940 chunks |
 | M2 ✓ | Retrieval service: MCP + REST, p95 98 ms |
 | M3 ✓ | Golden set (35 cases, 9 doc defects) + L1 suite: hit rate 0.87 |
-| M4 | Text agent + L2 suite |
+| M4 | Text agent + L2 suite: faithfulness 0.92 but correctness 0.48 (calibration pending) |
 | M5 | Voice agent + L3 suite + attribution report |
 | D1 | Published test report on Cloudflare Pages (after M5) |
 | D2 | Hosted live demo: Pages + Tunnel + Access (after M5) |
