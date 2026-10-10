@@ -28,8 +28,10 @@ caused the failure** (STT, retrieval, generation, policy, latency, turn-taking, 
  Test harness (Robot Framework + Ragas): L1 retrieval · L2 agent · L3 voice · L4 telephony · attribution report
 ```
 
-Default stack, all local and swappable through config: Python 3.11+ / `uv`, Docker Compose, Qdrant, Ollama
-(embeddings + agent LLM), FastMCP, FastAPI, Pipecat, faster-whisper, Piper/Kokoro, and Asterisk.
+Default stack, swappable through config: Python 3.11+ / `uv`, Docker Compose, Qdrant, Ollama
+(embeddings + the agent under test), FastMCP, FastAPI, Pipecat, faster-whisper, Piper/Kokoro, and Asterisk.
+The judge is hosted: Claude Haiku 4.5, a different model family from the local agent it grades.
+The test report and the live demo are hosted on Cloudflare (Pages, Tunnel, Access).
 
 ## Quickstart
 
@@ -67,6 +69,8 @@ M0 (setup) and M1 (ingestion) are done. Milestone notes are in [docs/notes/](doc
 | M3 | Golden set + L1 retrieval suite |
 | M4 | Text agent + L2 suite |
 | M5 | Voice agent + L3 suite + attribution report |
+| D1 | Published test report on Cloudflare Pages (after M5) |
+| D2 | Hosted live demo: Pages + Tunnel + Access (after M5) |
 | M6 | Telephony + L4 suite |
 | M7 | CI and drift detection |
 | M8 | Cross-platform comparison (optional) |
