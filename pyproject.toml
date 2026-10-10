@@ -20,11 +20,19 @@ lab = "lab.cli:main"
 [project.optional-dependencies]
 # Pulled in per milestone; M0 only checks they install and import.
 # ragas 0.4.3 imports langchain_community.chat_models.vertexai, removed in langchain-community 0.4.
-eval = ["ragas", "langchain-community<0.4"]
+eval = [
+    "ragas",
+    "langchain-community<0.4",
+    "anthropic>=1.13.0",
+]
 voice = ["pipecat-ai"]
 
 [dependency-groups]
-dev = ["pytest", "ruff"]
+dev = [
+    "pytest",
+    "robotframework>=7.5",
+    "ruff",
+]
 
 [build-system]
 requires = ["hatchling"]

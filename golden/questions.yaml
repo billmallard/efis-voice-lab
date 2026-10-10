@@ -1,4 +1,5 @@
-# Golden set -- DRAFT v0 (2026-10-09), awaiting maintainer review.
+# Golden set v1 (2026-10-09). Reviewed: the maintainer ruled HW-005, INST-001, VER-002;
+# VFR-001 was settled by code analysis.
 #
 # Every expected answer was checked against the indexed source documents at the
 # commits in docs/notes/M1.md, not against the plan's summary table. Where the docs
@@ -15,6 +16,9 @@
 #   gold_sources        L1 passes if ANY listed source appears in the top-k.
 #                       `heading` is a substring of the chunk's heading path; omit it
 #                       to accept any section of the file.
+#   trap_sources        stale or misleading documents that produce a confident wrong
+#                       answer if retrieved. L1 reports a trap ranked above every gold
+#                       source; attribution uses it to blame the corpus, not the agent.
 #   must_include        case-insensitive; every term must appear in the answer
 #   must_include_any    case-insensitive; at least one term must appear
 #   must_not_include    case-insensitive; none may appear
@@ -106,6 +110,8 @@
     GL 3; the Pi 5's built-in GPU handles that.
   gold_sources:
     - {repo: billmallard/pyEfis, path: README.rst, heading: "Hardware"}
+  trap_sources:
+    - {repo: billmallard/pyEfis, path: docs/perf_baseline_gpu_required.md}
   must_include: ["synthetic vision", "CPU"]
   must_not_include: []
   expected_behavior: answer
@@ -140,26 +146,26 @@
     - "how big is the terrain data for all of north america"
     - "how much disk space do i need for terrain"
   expected_answer: >
-    Plan on roughly 90 gigabytes of terrain tiles for all of North America, and more
-    if you install the zoom pyramid. That's why an M.2 hat with an NVMe SSD is strongly
-    preferred over the microSD card. The compressed download is smaller, about 60
-    gigabytes, and most installs pull only the regions they fly. One western-US region
-    is about 10 gigabytes.
+    About 120 gigabytes on disk for all of North America: roughly 90 for the terrain
+    tiles plus about 30 for the zoom pyramid. That's why an M.2 hat with an NVMe SSD is
+    strongly preferred over the microSD card. The download itself is compressed, about
+    60 gigabytes, and most installs only pull the regions they fly. One western-US
+    region is about 10 gigabytes.
   gold_sources:
-    - {repo: billmallard/pyEfis, path: README.rst, heading: "Suggested"}
     - {repo: billmallard/makerplane-data, path: docs/terrain.md, heading: "Storage"}
     - {repo: billmallard/makerplane-data, path: docs/terrain.md, heading: "Compression"}
+    - {repo: billmallard/makerplane-data, path: docs/terrain.md, heading: "Build + upload"}
+  trap_sources:
+    - {repo: billmallard/pyEfis, path: README.rst, heading: "Suggested"}
+  must_include: ["120"]
   must_include_any: ["NVMe", "M.2"]
   must_not_include: []
   expected_behavior: answer
   notes: >
-    The figures disagree by document and by what is counted. The README says a full
-    North America set is about 90 GB. terrain.md says 91 GB uncompressed native tiles,
-    about +31 GB for the mip pyramid (about 120 GB), and about 60 GB as compressed
-    packs. None of them is wrong, but no single number is the answer.
-  review: >
-    Is "about 90 GB, more with the pyramid" the right spoken answer, or should the
-    on-disk figure with the pyramid (about 120 GB) lead?
+    The README's "~90 GB" for a full North America set is stale (ruled 2026-10-09). It
+    predates the mip pyramid (+31 GB, per makerplane-data terrain.md), and the on-disk
+    figure of about 120 GB supersedes it. An answer that leads with 90 GB is citing the
+    stale README. The compressed download (about 60 GB) is a different quantity.
 
 # -------------------------------------------------------------------- controls
 - id: CTRL-001
@@ -174,6 +180,9 @@
     if you hold them.
   gold_sources:
     - {repo: billmallard/pyEfis, path: docs/wiki/Pilots-Guide.md, heading: "Setting the altimeter"}
+  trap_sources:
+    - {repo: billmallard/pyEfis, path: README.rst, heading: "Controls"}
+    - {repo: makerplane/pyEfis, path: README.rst, heading: "Controls"}
   must_include_any: ["plus", "+", "button"]
   must_not_include: ["bracket"]
   expected_behavior: answer
@@ -294,27 +303,29 @@
     - "how do i get the approach data for virtual v f r"
     - "how do i install the c i f p file"
   expected_answer: >
-    Download the current FAA CIFP file, extract the FAACIFP18 file into a CIFP folder,
-    and build an index file from it with the MakeCIFPIndex script. Then point the
-    config at the CIFP file and the index. Note that the indexing script comes from the
-    pyavtools package, not from pyEfis itself.
+    Download the current FAA CIFP file and extract the FAACIFP18 file into the CIFP
+    folder, which defaults to makerplane, pyefis, CIFP in your home directory. Build an
+    index file from it with the MakeCIFPIndex script, which comes with the pyavtools
+    package that pyEfis installs. The screen configs pick up both files through the
+    virtual VFR database settings. For synthetic vision, the NASR airport database
+    from makerplane-data is preferred, and CIFP is only the fallback.
   gold_sources:
     - {repo: billmallard/pyEfis, path: README.rst, heading: "Virtual VFR"}
     - {repo: billmallard/pyEfis, path: docs/svs_data_refresh.md, heading: "CIFP"}
+    - {repo: billmallard/pyEfis, path: src/pyefis/config/screens/virtualvfr_db.yaml}
     - {repo: makerplane/pyEfis, path: README.rst, heading: "Virtual VFR"}
   must_include: ["CIFP"]
   must_include_any: ["index"]
-  must_not_include: []
+  must_not_include: ["Screen.PFD"]
   expected_behavior: answer
   notes: >
-    The README says to run ./MakeCIFPIndex.py, but no such file exists in either pyEfis
-    repo. docs/svs_data_refresh.md runs it from pyavtools/utils. The README also says to
-    edit a "[Screen.PFD] section", which is the INI-era config format, while the config
-    is now YAML.
-  review: >
-    Is the virtual VFR / CIFP path still supported on the fork? If it's been
-    superseded by makerplane-data packs (CIFP packs are "deferred" there), the expected
-    answer should say so.
+    Still supported on the fork, per code analysis (2026-10-09; read, not run). Every
+    shipped screen includes screens/virtualvfr_db.yaml (dbpath / indexpath under
+    ~/makerplane/pyefis/CIFP). Virtual VFR reads CIFP through pyavtools, a pinned
+    dependency. The SVS airport DB prefers NASR and keeps CIFPAirportDB as a fallback
+    "for users without NASR". README defects: ./MakeCIFPIndex.py exists in neither
+    pyEfis repo (it's pyavtools/utils, per docs/svs_data_refresh.md), and "[Screen.PFD]
+    section" is the INI-era format. The setting now lives in YAML.
 
 # ------------------------------------------------------------------ developer
 - id: DEV-001
@@ -374,28 +385,32 @@
     pip install -e '.[qt,svs]' described rather than spelled out.
 
 - id: INST-001
-  category: procedural
+  category: conflict
   question: "How do I install pyEfis and FIX Gateway on a Raspberry Pi?"
   spoken_variants:
     - "how do i install it on a raspberry pi"
     - "what's the easiest way to install pie efis"
   expected_answer: >
-    Use the snaps. Update the system, install snapd, turn on its hotplug and
-    user-daemon options, and reboot. Then install the core snap, the fixgateway snap
-    and the pyefis snap. If you use CAN or serial hardware, grant the fixgateway snap
-    access to it.
+    Install from source. The snap packages the install guide describes aren't current
+    with this fork, so they won't have its features, such as synthetic vision. Set up
+    a Python virtual environment, install pyEfis with the qt extra, plus the svs extra
+    for synthetic vision, then install and run FIX Gateway, and start pyEfis. The
+    running-from-source guide and the headless appliance guide walk through it.
   gold_sources:
+    - {repo: billmallard/pyEfis, path: docs/running_from_source.md}
+    - {repo: billmallard/pyEfis, path: docs/wiki/Running-from-Source.md}
+    - {repo: billmallard/pyEfis, path: docs/wiki/Headless-Linux-Appliance.md}
+  trap_sources:
     - {repo: billmallard/pyEfis, path: INSTALLING.md}
     - {repo: makerplane/pyEfis, path: INSTALLING.md}
-  must_include: ["snap"]
-  must_not_include: []
+  must_include: ["source"]
+  must_not_include: ["sudo snap install pyefis"]
   expected_behavior: answer
   notes: >
-    INSTALLING.md targets 64-bit Raspbian bullseye; the reference unit runs trixie.
-    The fork's own SVS/navdata work is source-installed, so the snap may lag the fork.
-  review: >
-    Do the snaps still represent the fork? If not, should this answer steer people to
-    running from source (DEV-003) instead?
+    INSTALLING.md (fork and upstream) prescribes snaps on 64-bit Raspbian bullseye.
+    The snaps aren't current and won't be for some time (ruled 2026-10-09), so source
+    is the safe answer. INSTALLING.md is the most on-topic document for the question,
+    which makes it the likeliest retrieval and the likeliest wrong answer.
 
 # ----------------------------------------------------------- navigation data
 - id: DATA-001
@@ -505,22 +520,23 @@
     - "is there a moving map"
     - "can pie efis show a map"
   expected_answer: >
-    In this fork, yes. There's a moving map instrument with layers such as terrain,
-    airports and navaids. Upstream pyEfis doesn't have one.
+    In this fork, there's a moving map, but treat it as experimental for now. It's an
+    instrument with layers such as terrain, airports and navaids, and it isn't covered
+    in the user guide yet. Upstream pyEfis doesn't have one.
   gold_sources:
     - {repo: billmallard/pyEfis, path: README.rst, heading: "Licensing"}
     - {repo: billmallard/pyEfis, path: src/pyefis/config/screens/map-controls-test.yaml}
     - {repo: billmallard/pyEfis, path: docs/map_layers_roadmap.md}
-  must_include: ["fork"]
+  trap_sources:
+    - {repo: billmallard/pyEfis, path: docs/moving_map_spec.md, heading: "Moving Map"}
+  must_include: ["fork", "experimental"]
   must_not_include: ["not started", "hasn't started"]
   expected_behavior: answer
   notes: >
     The fork's docs/moving_map_spec.md still says "Status: SPEC (2026-07-05).
     Development has not started", but src/pyefis/instruments/map/ and a moving_map
     screen config exist on master. The user wiki doesn't document the map at all.
-  review: >
-    Is the moving map user-ready on master, or is "exists but experimental" more
-    honest? The gold sources are thin because the wiki doesn't cover it.
+    "Experimental" ruled 2026-10-09.
 
 - id: VER-003
   category: version
@@ -537,6 +553,8 @@
     - {repo: billmallard/pyEfis, path: README.rst, heading: "Getting Started"}
     - {repo: billmallard/pyEfis, path: docs/running_from_source.md, heading: "Install dependencies"}
     - {repo: billmallard/pyEfis, path: docs/wiki/Running-from-Source.md}
+  trap_sources:
+    - {repo: makerplane/pyEfis, path: README.rst, heading: "Getting Started"}
   must_include: ["qt"]
   must_include_any: ["no", "not enough", "also"]
   must_not_include: []

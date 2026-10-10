@@ -153,6 +153,24 @@ wheels = [
 ]
 
 [[package]]
+name = "anthropic"
+version = "1.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "docstring-parser" },
+    { name = "httpx2" },
+    { name = "jiter" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0b/ed/e76e50601b7c476bcb9a2a7a4c4dab6f1a9b2c03e3922de8b3ec599ccbc5/anthropic-1.13.0.tar.gz", hash = "sha256:ad11d9bb9adafdfea26113943bcde9973e2a439ebeeda6c89ff3e3d85bb2f5c1", size = 1567362, upload-time = "2026-10-09T15:29:08.803Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/9a/a835340c91bc9a233bd54c05fc438fe07cbef71ca667f24f3892a268ae20/anthropic-1.13.0-py3-none-any.whl", hash = "sha256:157bd74dbf6a595cf9e5fcac557c791fd297924dc48261f57470c2ed6f4e6671", size = 1958595, upload-time = "2026-10-09T15:29:10.689Z" },
+]
+
+[[package]]
 name = "anyio"
 version = "4.15.1"
 source = { registry = "https://pypi.org/simple" }
@@ -617,6 +635,7 @@ dependencies = [
 
 [package.optional-dependencies]
 eval = [
+    { name = "anthropic" },
     { name = "langchain-community" },
     { name = "ragas" },
 ]
@@ -627,11 +646,13 @@ voice = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "robotframework" },
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "anthropic", marker = "extra == 'eval'", specifier = ">=1.13.0" },
     { name = "fastapi", specifier = ">=0.143.0" },
     { name = "fastmcp", specifier = ">=4.1.0" },
     { name = "httpx" },
@@ -647,6 +668,7 @@ provides-extras = ["eval", "voice"]
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest" },
+    { name = "robotframework", specifier = ">=7.5" },
     { name = "ruff" },
 ]
 
@@ -2987,6 +3009,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cf/0e/faf7c7e36630561e3e9611730c47510cd972dd5fde8f95941ff78f76accd/rich_rst-2.2.0.tar.gz", hash = "sha256:b1e6a67f8f694a6f36035624bf73e2b1a0a4be13edaf3ba5e654d9758b61073a", size = 326270, upload-time = "2026-09-27T19:12:42.163Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/4e/716b42bf066e180c1235783b46f095a5d871d05dca7006d2295aac29c491/rich_rst-2.2.0-py3-none-any.whl", hash = "sha256:1ea1c43813dc4a8d86475fce27ffb74e0ada3d4656c9f8130ba2a59868055fe9", size = 279274, upload-time = "2026-09-27T19:12:40.548Z" },
+]
+
+[[package]]
+name = "robotframework"
+version = "7.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/77/5f60e5619082d387971d111c1354f1f529d2959ee742877982002d38d53d/robotframework-7.5.tar.gz", hash = "sha256:ff6233ff752a200ece4d0a6c59f6f9f7d0e96dcff0a7a3458296b997b812482e", size = 684632, upload-time = "2026-09-14T13:12:56.892Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/f1/3075460f0a0d3ac52aa607a843860a61ac578b51d80a0980ebf5e30486bc/robotframework-7.5-py3-none-any.whl", hash = "sha256:5a194db36524604fafa1da89adebc837db9a95adf15ffd746e09ce98251e6c68", size = 842522, upload-time = "2026-09-14T13:12:54.644Z" },
 ]
 
 [[package]]
