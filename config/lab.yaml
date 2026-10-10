@@ -11,7 +11,7 @@ models:
     query_prefix: "search_query: "
     batch_size: 32
   agent_llm: {provider: ollama, name: null}   # 8B-class instruct model, chosen in M4
-  judge_llm: {provider: null, name: null}     # hosted recommended; logged with every run
+  judge_llm: {provider: anthropic, name: claude-haiku-4-5}   # ANTHROPIC_API_KEY; logged with every run
   stt: {provider: faster-whisper, size: small}
   tts: {provider: piper, voice: null}
 retrieval: {top_k: 5, p95_budget_ms: 300}
