@@ -10,6 +10,9 @@ often the judges agree before anyone trusts their trends.
   lab calibrate score    compares the filled-in grades with the run's judge verdicts:
                          agreement rate and Cohen's kappa per judge, plus each
                          disagreement with the judge's reason.
+  lab calibrate rejudge  re-runs the custom judges on a run's saved answers after a
+                         rubric change, so `score --run` can compare against the same
+                         grades without re-running the agent.
 """
 
 from __future__ import annotations
@@ -139,11 +142,12 @@ def cohen_kappa(pairs: list[tuple[str, str]]) -> float | None:
     return round((po - pe) / (1 - pe), 3) if pe < 1 else (1.0 if po == 1 else 0.0)
 
 
-def score(sheet_path: Path) -> dict[str, Any]:
+def score(sheet_path: Path, run_path: Path | None = None) -> dict[str, Any]:
+    """`run_path` overrides the worksheet's run, e.g. a rejudged copy."""
     sheet = yaml.safe_load(sheet_path.read_text(encoding="utf-8"))
-    run = json.loads((ROOT / sheet["run"]).read_text(encoding="utf-8"))
+    run = json.loads((run_path or ROOT / sheet["run"]).read_text(encoding="utf-8"))
     verdicts = {c["id"]: c for c in run["cases"]}
-    report: dict[str, Any] = {"run": sheet["run"], "grader": sheet.get("grader"),
+    report: dict[str, Any] = {"run": str(run_path or sheet["run"]), "grader": sheet.get("grader"),
                               "judge": run.get("judge"), "judges": {}}
     for field, judge_key in JUDGED.items():
         pairs, disagreements = [], []
@@ -153,10 +157,16 @@ def score(sheet_path: Path) -> dict[str, Any]:
             if human is None or not v:
                 continue
             human = str(human).strip().lower()
-            pairs.append((human, v["verdict"]))
-            if human != v["verdict"]:
+            judged = v["verdict"]
+            if field == "behavior" and human in ("pass", "fail"):
+                # Graded as "did it do the expected thing", not as a label: compare
+                # against whether the judge's label matched the expected behavior.
+                judged = "pass" if judged == row["expected_behavior"] else "fail"
+            pairs.append((human, judged))
+            if human != judged:
                 disagreements.append({"id": row["id"], "human": human,
-                                      "judge": v["verdict"], "judge_reason": v["reason"],
+                                      "judge": judged, "judge_label": v["verdict"],
+                                      "judge_reason": v["reason"],
                                       "comment": row["grade"].get("comment")})
         agree = sum(a == b for a, b in pairs)
         report["judges"][judge_key] = {
@@ -176,3 +186,53 @@ def score(sheet_path: Path) -> dict[str, Any]:
                              "ragas": ragas.get(row["id"])}
     report["l1_context_precision"] = l1
     return report
+
+
+def rejudge(cfg: LabConfig, run_path: Path, judges_to_run: list[str],
+            ids: set[str] | None = None) -> Path:
+    """Re-run the custom judges on a run's saved answers (no agent, no Ragas) and write
+    a copy of the run with the new verdicts, for re-scoring a changed rubric against
+    the same worksheet."""
+    import asyncio
+    from datetime import UTC, datetime
+
+    from lab import judge
+    from lab.agent import speech
+    from lab.harness import l2
+    from lab.harness.judges import Judges
+
+    run = json.loads(run_path.read_text(encoding="utf-8"))
+    cases = {c.id: c for c in golden.load()}
+    j = Judges(cfg)
+
+    async def one(rec: dict[str, Any]) -> None:
+        g = cases[rec["id"]]
+        answer = rec["answer"] or "(no response)"
+        spoken = speech.normalize(answer) if cfg.agent.speech_normalize else answer
+        rec["spoken"] = spoken
+        rec["terms"] = l2.term_checks(g, spoken)
+        jobs = {}
+        if "policy" in judges_to_run:
+            jobs["policy"] = j.policy(g.question, answer)
+        if "speakability" in judges_to_run:
+            jobs["speakability"] = j.speakability(g.question, spoken)
+        if "correctness" in judges_to_run and g.expected_behavior == "answer":
+            jobs["correctness"] = j.correctness(g.question, answer, g.expected_answer,
+                                                g.notes)
+        for name, value in zip(jobs, await asyncio.gather(*jobs.values()), strict=True):
+            rec[name] = value
+        if rec.get("policy"):
+            rec["behavior_ok"] = rec["policy"]["verdict"] == g.expected_behavior
+
+    async def run_all() -> None:
+        await asyncio.gather(*(one(r) for r in run["cases"] if not ids or r["id"] in ids))
+
+    asyncio.run(run_all())
+    run["aggregate"] = l2.aggregate(run["cases"])
+    run["rejudged"] = {"from": run_path.as_posix(), "judges": judges_to_run,
+                       "at": datetime.now(UTC).isoformat(timespec="seconds"),
+                       "usage": judge.usage_cost(cfg)}
+    out = ROOT / "results" / "L2" / f"rejudge-{datetime.now(UTC):%Y%m%dT%H%M%SZ}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(run, indent=2), encoding="utf-8")
+    return out

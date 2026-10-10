@@ -250,3 +250,18 @@ def test_cohen_kappa():
     assert cohen_kappa([("pass", "pass"), ("fail", "fail")]) == 1.0
     assert cohen_kappa([("pass", "fail"), ("fail", "pass")]) == -1.0
     assert cohen_kappa([]) is None
+
+
+def test_correctness_verdict_is_derived_and_quotes_are_checked():
+    findings = {"answers_question": True, "main_claim_correct": True, "score": 0.8,
+                "reason": "r", "omissions": ["the port number"],
+                "contradictions": [{"claim": "x", "conflicts_with": "not in the source"}]}
+    fake = FakeAnthropic(findings)
+    out = asyncio.run(judges.Judges(config.load(), client=fake).correctness(
+        "q?", "answer", reference="Over TCP port 3490.", notes=None))
+    assert out["verdict"] == "pass"            # an omission alone never fails
+    assert out["contradictions"] == [] and len(out["unverified_contradictions"]) == 1
+    findings["contradictions"] = [{"claim": "x", "conflicts_with": "TCP  port 3490"}]
+    out = asyncio.run(judges.Judges(config.load(), client=FakeAnthropic(findings)).correctness(
+        "q?", "answer", reference="Over TCP port 3490.", notes=None))
+    assert out["verdict"] == "fail"

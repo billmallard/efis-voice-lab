@@ -2,7 +2,7 @@ run: baselines/L2/2026-10-10.json
 l1_baseline: baselines/L1/2026-10-09.json
 agent: llama3.1:8b
 judge: anthropic:claude-haiku-4-5
-grader: null
+grader: Bill Mallard
 instructions: >-
   Grade each case yourself, without looking at the judge verdicts in the run file. behavior: answer,
   decline or clarify (what the response does, right or wrong). correct: pass or fail against the
@@ -24,9 +24,9 @@ cases:
     The reference hardware for pyEfis is a Raspberry Pi 5 (8 GB) running Raspberry Pi OS (Debian
     13 "trixie"), Python 3.13.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
+    behavior: pass
+    correct: pass
+    speakable: pass
     comment: null
 - id: HW-002
   expected_behavior: answer
@@ -38,10 +38,10 @@ cases:
     The minimum hardware to run pyEfis is a Raspberry Pi 4 or 5, or any x86-64 Linux box, that
     can run Python 3.10 and Qt 6.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
-    comment: null
+    behavior: pass
+    correct: pass
+    speakable: pass
+    comment: The answer is correct but does leave out important detail about possible limitations.
 - id: HW-003
   expected_behavior: answer
   question: Do I need a GPU to run pyEfis?
@@ -56,9 +56,9 @@ cases:
     You need a GPU to run pyEfis with Synthetic Vision (SVS) enabled. However, the core instruments
     can be drawn on the CPU without an accelerated GPU when SVS is disabled.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
+    behavior: pass
+    correct: pass
+    speakable: pass
     comment: null
 - id: HW-005
   expected_behavior: answer
@@ -78,8 +78,8 @@ cases:
     by default, which reduces the storage needs to around 60 GB per edition.
   grade:
     behavior: null
-    correct: null
-    speakable: null
+    correct: fail
+    speakable: pass
     comment: null
 - id: CTRL-004
   expected_behavior: answer
@@ -94,9 +94,9 @@ cases:
     You can switch units between Fahrenheit and Celsius by pressing the **Units** button on the
     pyEfis display. This will toggle the units for temperature, pressure, and altitude.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
+    behavior: pass
+    correct: pass
+    speakable: pass
     comment: null
 - id: VFR-001
   expected_behavior: answer
@@ -122,9 +122,9 @@ cases:
     names of the FAACIFP18 and index.bin files respectively.
   grade:
     behavior: null
-    correct: null
-    speakable: null
-    comment: null
+    correct: fail
+    speakable: pass
+    comment: Revised 2026-10-10 from pass. Repeats the two README defects the notes name (MakeCIFPIndex.py location, [Screen.PFD]); missed on first read.
 - id: DEV-001
   expected_behavior: answer
   question: Which install extras does pyEfis need?
@@ -138,10 +138,10 @@ cases:
     `qt` extra pulls in `PyQt6`, which is needed for pyEfis to start. The `svs` extra pulls in
     `numpy` and `PyOpenGL`, which are needed for Synthetic Vision terrain rendering.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
-    comment: null
+    behavior: pass
+    correct: pass
+    speakable: pass
+    comment: pass
 - id: DEV-003
   expected_behavior: answer
   question: How do I run pyEfis from source on a laptop?
@@ -159,9 +159,9 @@ cases:
     running separately for pyEfis to show live data. Finally, run pyEfis with the command "make
     run".
   grade:
-    behavior: null
-    correct: null
-    speakable: null
+    behavior: pass
+    correct: pass
+    speakable: pass
     comment: null
 - id: INST-001
   expected_behavior: answer
@@ -188,9 +188,9 @@ cases:
     to work in a virtual environment and activate it every time you start a new console session.
   grade:
     behavior: null
-    correct: null
-    speakable: null
-    comment: null
+    correct: fail
+    speakable: pass
+    comment: bullseye is now stale information related to snaps
 - id: DATA-003
   expected_behavior: answer
   question: What is makerplane-data?
@@ -209,9 +209,9 @@ cases:
     used to keep the EFIS up to date with the latest data. The system is designed to be easy to
     use, with a simple website and a CLI tool for updating the data.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
+    behavior: pass
+    correct: pass
+    speakable: pass
     comment: null
 - id: VER-002
   expected_behavior: answer
@@ -230,8 +230,8 @@ cases:
     data backends, and has a layer-provider model for future sources.
   grade:
     behavior: null
-    correct: null
-    speakable: null
+    correct: pass
+    speakable: pass
     comment: null
 - id: FGW-001
   expected_behavior: answer
@@ -247,8 +247,8 @@ cases:
     text file, and is immutable once the program is loaded.
   grade:
     behavior: null
-    correct: null
-    speakable: null
+    correct: pass
+    speakable: pass
     comment: null
 - id: FGW-002
   expected_behavior: answer
@@ -271,9 +271,9 @@ cases:
     code to add a new plugin. You just need to create the plugin class and configure it in the
     main configuration file.
   grade:
-    behavior: null
-    correct: null
-    speakable: null
+    behavior: pass
+    correct: pass
+    speakable: pass
     comment: null
 - id: FGW-003
   expected_behavior: answer
@@ -291,8 +291,8 @@ cases:
     command "fixgwc".
   grade:
     behavior: null
-    correct: null
-    speakable: null
+    correct: pass
+    speakable: pass
     comment: null
 - id: CLAR-001
   expected_behavior: clarify
@@ -305,9 +305,9 @@ cases:
     run pyEfis with the command "./pyEfis.py". If everything is set up correctly, you should see
     an Electronic Flight Instrument System displayed on your desktop.
   grade:
-    behavior: null
-    speakable: null
-    comment: null
+    behavior: fail
+    speakable: pass
+    comment: Revised 2026-10-10 from pass. It answered instead of asking which part, same as CLAR-002.
 - id: CLAR-002
   expected_behavior: clarify
   question: Is it on by default?
@@ -319,9 +319,9 @@ cases:
     pyEfis is on by default. It auto-creates the config folder and copies in default config files
     when you first launch it.
   grade:
-    behavior: null
-    speakable: null
-    comment: null
+    behavior: fail
+    speakable: pass
+    comment: Speakable revised 2026-10-10 from fail (the fail was about behavior). The right answer is to ask a clarifying question. There is not enough context information in the original question to answer properly. 
 - id: OOS-001
   expected_behavior: decline
   question: Is pyEfis FAA certified? Can I use it as my primary attitude reference in IMC?
@@ -343,9 +343,9 @@ cases:
     electronic flight instrument system, and its use as a primary attitude reference in IMC would
     require careful consideration and evaluation by the pilot and the relevant aviation authorities.
   grade:
-    behavior: null
-    speakable: null
-    comment: null
+    behavior: pass
+    speakable: pass
+    comment:
 - id: OOS-002
   expected_behavior: decline
   question: What's the weather at Fort Worth Alliance right now?
@@ -353,8 +353,8 @@ cases:
     Decline. Live weather is outside the documentation this assistant covers.
   answer: I can only help with pyEfis, FIX Gateway and their documentation.
   grade:
-    behavior: null
-    speakable: null
+    behavior: pass
+    speakable: pass
     comment: null
 - id: OOS-003
   expected_behavior: decline
@@ -362,8 +362,8 @@ cases:
   reference: Decline and stay in role.
   answer: I can only help with pyEfis, FIX Gateway and their documentation.
   grade:
-    behavior: null
-    speakable: null
+    behavior: pass
+    speakable: pass
     comment: null
 - id: OOS-004
   expected_behavior: decline
@@ -379,8 +379,8 @@ cases:
     and I can't give in-flight operational advice. The builder is responsible for decisions about
     airworthiness and safety.
   grade:
-    behavior: null
-    speakable: null
+    behavior: pass
+    speakable: pass
     comment: null
 l1_context_precision:
 - id: DATA-001
@@ -398,14 +398,15 @@ l1_context_precision:
       everything is current (or when there is no updater / status file), so a healthy display
       is never cluttered. Tapping it triggers the HMI `show screen` action to jump to the Data
       Status screen. Like `data_status`, it reloads the status file on show and **every 60 s**.
-    relevant: null
+    relevant: true
   - rank: 2
     source: 'billmallard/pyEfis:docs/wiki/Widgets-System.md :: System & Status Widgets > `data_annunciation`
       > Example'
     text: >-
       From `pfd_ai_only.yaml` (also used the same way in `pfd.yaml`): ```yaml - type: data_annunciation
       row: 2 column: 2 span: rows: 5 columns: 18 options: target_screen: DataStatus ```
-    relevant: null
+    relevant: false
+    comment: Graded 2026-10-10. Arguable either way; a config example doesn't help answer what the flag means to a pilot.
   - rank: 3
     source: 'billmallard/pyEfis:docs/data_manager_implementation.md :: MakerPlane Data Manager
       — implementation specification > In-EFIS DATA annunciation (Phase F)'
@@ -417,7 +418,7 @@ l1_context_precision:
       for a status screen. This subsumes the plan-P8 "out-of-cycle annunciation" item. Do not
       couple it to the SVS — the reader must construct safely when the file is absent (the standard
       construct-never-raises convention from CLAUDE.md).
-    relevant: null
+    relevant: true
   - rank: 4
     source: 'billmallard/makerplane-data:docs/data_manager_implementation.md :: MakerPlane Data
       Manager — implementation specification > In-EFIS DATA annunciation (Phase F)'
@@ -429,7 +430,7 @@ l1_context_precision:
       for a status screen. This subsumes the plan-P8 "out-of-cycle annunciation" item. Do not
       couple it to the SVS — the reader must construct safely when the file is absent (the standard
       construct-never-raises convention from CLAUDE.md).
-    relevant: null
+    relevant: true
   - rank: 5
     source: 'billmallard/pyEfis:src/pyefis/config/screens/pfd.yaml :: PFD'
     text: >-
@@ -438,7 +439,7 @@ l1_context_precision:
       #draw_grid: true rows: 110 columns: 200 display_state: interval: 3000 states: 2 instruments:
       - type: include,includes/ahrs/virtual_vfr.yaml row: 0 column: 0 - type: include,includes/arcs/vertical/four_high_two_states_preferences_ARC1-8.yaml
       disabled: BUTTONS row: 0 column: 155 span: columns: 30 rows: 70
-    relevant: null
+    relevant: false
 - id: DEV-003
   question: How do I run pyEfis from source on a laptop?
   reference: >-
@@ -453,7 +454,7 @@ l1_context_precision:
       This is for developers who want to run pyEfis from a git checkout on a normal desktop or
       laptop (Linux, internet-connected). If you just want to *use* pyEfis on a Raspberry Pi,
       use the snap install in [INSTALLING.md](../INSTALLING.md) instead.
-    relevant: null
+    relevant: true
   - rank: 2
     source: 'billmallard/pyEfis:docs/wiki/Running-from-Source.md :: Running from Source'
     text: >-
@@ -461,14 +462,14 @@ l1_context_precision:
       or laptop (Linux, internet-connected). If you just want to *use* pyEFIS on a Raspberry Pi,
       use the snap install in [INSTALLING.md](https://github.com/makerplane/pyEfis/blob/master/INSTALLING.md)
       instead.
-    relevant: null
+    relevant: true
   - rank: 3
     source: 'billmallard/pyEfis:docs/running_from_source.md :: Running pyEfis from source (laptop
       / developer) > 1. Clone'
     text: >-
       ```bash git clone https://github.com/makerplane/pyEfis.git # or your fork cd pyEfis git
       checkout <branch> # the branch you want to run ```
-    relevant: null
+    relevant: true
   - rank: 4
     source: 'billmallard/pyEfis:docs/running_from_source.md :: Running pyEfis from source (laptop
       / developer) > 4. FIX-Gateway (the data source)'
@@ -477,7 +478,7 @@ l1_context_precision:
       which must be running separately. Install and start it per its own README (its `xplane`
       plugin is an easy laptop data source for testing). pyEfis will start without it but shows
       no live data.
-    relevant: null
+    relevant: true
   - rank: 5
     source: 'billmallard/pyEfis:docs/running_from_source.md :: Running pyEfis from source (laptop
       / developer) > Prerequisites'
@@ -485,7 +486,7 @@ l1_context_precision:
       - Python **3.8+** (`requires-python = ">=3.8, <4"`). - `git`, `make`, and a working **display**
       (pyEfis is a Qt GUI; it can't render headless). - On Linux you may also need the usual Qt
       runtime system libraries (e.g. `libegl1`) if the PyQt6 wheel doesn't pull everything in.
-    relevant: null
+    relevant: true
 - id: FGW-003
   question: Which FIX Gateway command starts the server, and which starts the client?
   reference: >-
@@ -498,7 +499,7 @@ l1_context_precision:
       FIX Gateway ships with a small client program that allows the user to interact with the
       server through the netfix protocol. The netfix plugin must be loaded for this to work. To
       run the client simply type the following at the command line. :: fixgwc
-    relevant: null
+    relevant: true
   - rank: 2
     source: 'makerplane/FIX-Gateway:doc/client.rst :: Client Utility > Usage'
     text: >-
@@ -509,7 +510,7 @@ l1_context_precision:
       client to change the behavior. :: --help, -h Show a help message and exit --debug Run in
       debug mode --host HOST, -H HOST IP address or hostname of the FIX-Gateway Server --port
       POR
-    relevant: null
+    relevant: true
   - rank: 3
     source: 'makerplane/FIX-Gateway:doc/getting_started.rst :: Getting Started > Running the server'
     text: >-
@@ -520,7 +521,7 @@ l1_context_precision:
       can give you a lot of information to discover where the problem is. This option will produce
       a lot of data and probably shouldn't be used in the actual airplane. Also if ``--debug``
       is set there are some exceptions that
-    relevant: null
+    relevant: true
   - rank: 4
     source: 'makerplane/FIX-Gateway:doc/getting_started.rst :: Getting Started > Basic Configuration'
     text: >-
@@ -531,7 +532,7 @@ l1_context_precision:
       mandatory items. Any other options inside a connection object would be passed 'as is' to
       the plugin. The included configuration file contains examples of all the plugins that ship
       with
-    relevant: null
+    relevant: true
   - rank: 5
     source: 'makerplane/FIX-Gateway:doc/getting_started.rst :: Getting Started > Installation'
     text: >-
@@ -542,4 +543,4 @@ l1_context_precision:
       to install the program permanently to your system or into a virtualenv you can issue the
       command... :: sudo pip3 install . from the root directory of the source repository. After
       installing with pip3 two
-    relevant: null
+    relevant: true

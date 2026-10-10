@@ -22,6 +22,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from lab.agent import llm as llm_mod
+from lab.agent import speech
 from lab.config import ROOT, LabConfig
 
 HIT_KEYS = ("id", "repo", "origin", "path", "heading", "score")
@@ -37,7 +38,7 @@ class ToolCallRecord(BaseModel):
 
 class AgentTurn(BaseModel):
     question: str
-    answer: str
+    answer: str                        # the LLM's text
     model: str
     stop: str                          # answered | tool_budget | empty
     rounds: int
@@ -46,6 +47,7 @@ class AgentTurn(BaseModel):
     retrieved: list[dict[str, Any]]    # the same chunks' metadata (repo, path, heading, ...)
     timing: dict[str, float]           # total_ms, llm_ms, tool_ms, first_llm_ms
     usage: dict[str, int]              # agent LLM tokens, summed over rounds
+    spoken: str = ""                   # what TTS would receive (agent.speech_normalize)
 
     @property
     def searched(self) -> bool:
@@ -152,6 +154,7 @@ class TextAgent:
             break
         return AgentTurn(
             question=question, answer=answer, model=self.llm.name, stop=stop, rounds=rounds,
+            spoken=speech.normalize(answer) if self.cfg.agent.speech_normalize else answer,
             tool_calls=records,
             contexts=[h["text"] for h in seen.values()],
             retrieved=[{k: h[k] for k in ("repo", "origin", "path", "heading")}

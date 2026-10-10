@@ -35,7 +35,8 @@ Retrieval Latency Is Within Budget
     Retrieval P95 Should Be Within Budget
 
 Aggregate Scores Meet Thresholds
-    [Documentation]    Hit rate, and Ragas context precision and recall when a judge
-    ...    is configured, against config thresholds.
+    [Documentation]    Hit rate and MRR, and Ragas context recall when a judge is
+    ...    configured, against config thresholds. Ragas context precision is
+    ...    reported but not gated (M4 calibration).
     [Tags]    aggregate    run-level
     L1 Aggregates Should Meet Thresholds

@@ -40,6 +40,23 @@ class SttVerdict(_Verdict):
     verdict: Literal["equivalent", "different"]
 
 
+class Contradiction(BaseModel):
+    claim: str = Field(description="what the answer says")
+    conflicts_with: str = Field(description="the sentence of the reference or notes it "
+                                            "contradicts, quoted exactly")
+
+
+class CorrectnessFindings(BaseModel):
+    """The correctness judge lists findings; `Judges.correctness` derives the verdict, so
+    an omission can never fail a case on its own (calibration, 2026-10-10)."""
+    answers_question: bool
+    main_claim_correct: bool
+    contradictions: list[Contradiction]
+    omissions: list[str]
+    score: float = Field(ge=0, le=1)
+    reason: str
+
+
 @functools.cache
 def rubric(name: str) -> str:
     return (RUBRICS / f"{name}.md").read_text(encoding="utf-8").strip()
@@ -63,7 +80,7 @@ class Judges:
 
     async def _judge(self, name: str, schema: type[BaseModel], content: str) -> dict[str, Any]:
         resp = await self.client.messages.parse(
-            model=self.model, max_tokens=512, system=rubric(name),
+            model=self.model, max_tokens=1024, system=rubric(name),
             messages=[{"role": "user", "content": content}], output_format=schema,
             # SDK 1.x dropped the temperature kwarg; the API still takes it.
             extra_body={"temperature": 0})
@@ -78,9 +95,22 @@ class Judges:
 
     async def correctness(self, question: str, answer: str, reference: str,
                           notes: str | None = None) -> dict[str, Any]:
-        return await self._judge("correctness", PassFail, _tagged(
+        found = await self._judge("correctness", CorrectnessFindings, _tagged(
             question=question, reference_answer=reference, notes=notes,
             assistant_answer=answer))
+        # A contradiction counts only if it quotes text that is really in the reference or
+        # notes; the rest are kept for the record but don't fail the case.
+        source = " ".join(f"{reference} {notes or ''}".split()).lower()
+
+        def quoted(c: dict[str, str]) -> bool:
+            return " ".join(c["conflicts_with"].split()).lower().strip(" .\"'") in source
+
+        found["unverified_contradictions"] = [c for c in found["contradictions"]
+                                              if not quoted(c)]
+        found["contradictions"] = [c for c in found["contradictions"] if quoted(c)]
+        ok = (found["answers_question"] and found["main_claim_correct"]
+              and not found["contradictions"])
+        return {"verdict": "pass" if ok else "fail", **found}
 
     async def speakability(self, question: str, answer: str) -> dict[str, Any]:
         return await self._judge("speakability", PassFail,

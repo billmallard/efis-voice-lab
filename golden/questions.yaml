@@ -469,8 +469,8 @@
     - "what does the maker plane data project do"
   expected_answer: >
     It's the navigation-data currency system for pyEfis: signed packs of terrain,
-    airports, obstacles, water and roads, built daily and served from
-    navdata.aerocommons.org. The EFIS pulls them over WiFi or from USB and tells you
+    airports, navaids, obstacles, instrument procedures, water and roads, built daily
+    and served from navdata.aerocommons.org. The EFIS pulls them over WiFi or from USB and tells you
     when something is stale. It handles reference data only, not live flight data,
     which goes through FIX Gateway.
   gold_sources:
@@ -482,6 +482,8 @@
     The pyEfis README links it as github.com/makerplane/makerplane-data, which returns
     404. The repo exists only as billmallard/makerplane-data. An answer that sends
     the caller to the makerplane URL sends them to a dead link.
+    Reference updated 2026-10-10 (calibration): the live manifest also ships navaids and
+    procedures packs, so naming instrument procedures is correct.
 
 # ------------------------------------------------------------------- license
 - id: LIC-001

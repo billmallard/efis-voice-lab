@@ -47,6 +47,7 @@ def evaluate(case: GoldenCase, turn: AgentTurn) -> dict[str, Any]:
         "expected_behavior": case.expected_behavior,
         "question": case.question,
         "answer": turn.answer,
+        "spoken": turn.spoken or turn.answer,
         "stop": turn.stop,
         "rounds": turn.rounds,
         "searched": turn.searched,
@@ -54,7 +55,8 @@ def evaluate(case: GoldenCase, turn: AgentTurn) -> dict[str, Any]:
         "tool_errors": [c.error for c in turn.tool_calls if c.error],
         "retrieved": turn.retrieved,
         "agent_gold_hit": gold_hit(case, turn.retrieved),
-        "terms": term_checks(case, turn.answer),
+        # What the caller would hear is what's checked.
+        "terms": term_checks(case, turn.spoken or turn.answer),
         "timing": turn.timing,
         "usage": turn.usage,
     }

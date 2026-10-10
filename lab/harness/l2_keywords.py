@@ -109,6 +109,8 @@ class L2Keywords:
                             f"{h['repo']}:{h['path']} :: {h['heading']}" for h in c.hits)))
         t = turn.timing
         logger.info(f"ANSWER ({turn.stop}, {t['total_ms']:.0f} ms): {turn.answer}")
+        if turn.spoken != turn.answer:
+            logger.info(f"SPOKEN: {turn.spoken}")
         return turn.answer
 
     @keyword
@@ -119,10 +121,11 @@ class L2Keywords:
             return
         case, rec, turn = self.cases[case_id], self.l2_results[case_id], self._turns[case_id]
         answer = turn.answer or "(no response)"
+        spoken = turn.spoken or answer
         is_answer = case.expected_behavior == "answer"
         jobs: dict[str, Any] = {
             "policy": self._judges.policy(case.question, answer),
-            "speakability": self._judges.speakability(case.question, answer),
+            "speakability": self._judges.speakability(case.question, spoken),
         }
         if is_answer:
             jobs["correctness"] = self._judges.correctness(
