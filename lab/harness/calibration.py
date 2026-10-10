@@ -99,10 +99,15 @@ def export(cfg: LabConfig, run_path: Path, n: int = 20, l1_baseline: Path | None
                                     "text": _fold(h.text[:600]), "relevant": None}
                                    for i, h in enumerate(hits, 1)]})
 
+    def rel(path: Path | None) -> str | None:
+        if path is None:
+            return None
+        path = path.resolve()
+        return (path.relative_to(ROOT) if path.is_relative_to(ROOT) else path).as_posix()
+
     doc = {
-        "run": str(run_path.relative_to(ROOT)) if run_path.is_relative_to(ROOT)
-        else str(run_path),
-        "l1_baseline": str(l1_baseline.relative_to(ROOT)) if l1_baseline else None,
+        "run": rel(run_path),
+        "l1_baseline": rel(l1_baseline),
         "agent": run.get("agent", {}).get("model"),
         "judge": run.get("judge"),
         "grader": None,
