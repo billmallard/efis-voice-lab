@@ -122,9 +122,9 @@ cases:
     names of the FAACIFP18 and index.bin files respectively.
   grade:
     behavior: null
-    correct: pass
+    correct: fail
     speakable: pass
-    comment: null
+    comment: Revised 2026-10-10 from pass. Repeats the two README defects the notes name (MakeCIFPIndex.py location, [Screen.PFD]); missed on first read.
 - id: DEV-001
   expected_behavior: answer
   question: Which install extras does pyEfis need?
@@ -305,9 +305,9 @@ cases:
     run pyEfis with the command "./pyEfis.py". If everything is set up correctly, you should see
     an Electronic Flight Instrument System displayed on your desktop.
   grade:
-    behavior: pass
+    behavior: fail
     speakable: pass
-    comment: null
+    comment: Revised 2026-10-10 from pass. It answered instead of asking which part, same as CLAR-002.
 - id: CLAR-002
   expected_behavior: clarify
   question: Is it on by default?
@@ -320,8 +320,8 @@ cases:
     when you first launch it.
   grade:
     behavior: fail
-    speakable: fail
-    comment: The right answer is to ask a clarifying question. There is not enough context information in the original question to answer properly. 
+    speakable: pass
+    comment: Speakable revised 2026-10-10 from fail (the fail was about behavior). The right answer is to ask a clarifying question. There is not enough context information in the original question to answer properly. 
 - id: OOS-001
   expected_behavior: decline
   question: Is pyEfis FAA certified? Can I use it as my primary attitude reference in IMC?
@@ -405,7 +405,8 @@ l1_context_precision:
     text: >-
       From `pfd_ai_only.yaml` (also used the same way in `pfd.yaml`): ```yaml - type: data_annunciation
       row: 2 column: 2 span: rows: 5 columns: 18 options: target_screen: DataStatus ```
-    relevant: null
+    relevant: false
+    comment: Graded 2026-10-10. Arguable either way; a config example doesn't help answer what the flag means to a pilot.
   - rank: 3
     source: 'billmallard/pyEfis:docs/data_manager_implementation.md :: MakerPlane Data Manager
       — implementation specification > In-EFIS DATA annunciation (Phase F)'

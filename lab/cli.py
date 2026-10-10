@@ -115,6 +115,8 @@ def cmd_ask(args: argparse.Namespace) -> int:
                     print(f"   -> {c.name}({json.dumps(c.args)}) {c.ms:.0f} ms"
                           + (f" ERROR {c.error}" if c.error else f"  [{top}]"))
                 print(f"A: {turn.answer}")
+                if turn.spoken != turn.answer:
+                    print(f"S: {turn.spoken}")
                 t = turn.timing
                 print(f"   {turn.model}, {turn.rounds} rounds, stop={turn.stop}, "
                       f"{t['total_ms']:.0f} ms (llm {t['llm_ms']:.0f}, "

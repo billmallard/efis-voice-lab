@@ -339,11 +339,14 @@ class VoiceLabLibrary(L2Keywords):
     def l1_aggregates_should_meet_thresholds(self) -> None:
         agg = l1.aggregate(list(self.results.values()), self.latencies_ms)
         t = self.cfg.thresholds
-        checks = [("hit_rate", agg["hit_rate"], t.get("l1_hit_rate"))]
+        checks = [("hit_rate", agg["hit_rate"], t.get("l1_hit_rate")),
+                  ("mrr", agg["mrr"], t.get("l1_mrr"))]
         if self.ragas_enabled:
-            checks += [("ragas_context_precision", agg["ragas_context_precision"],
-                        t.get("context_precision")),
-                       ("ragas_context_recall", agg["ragas_context_recall"],
+            # Ragas context precision is reported, not gated: in M4 calibration it scored
+            # 0.0-0.2 where the maintainer graded 0.81-1.0 (docs/notes/M4.md).
+            logger.info(f"ragas_context_precision: {agg['ragas_context_precision']} "
+                        "(report only)")
+            checks += [("ragas_context_recall", agg["ragas_context_recall"],
                         t.get("context_recall"))]
         failures = []
         for name, value, threshold in checks:

@@ -44,6 +44,7 @@ class Agent(BaseModel):
     hidden_args: list[str] = ["k", "repo", "origin"]
     search_k: int = 5
     max_tool_rounds: int = 3
+    speech_normalize: bool = True
 
     def prompt_text(self) -> str:
         path = self.prompt if self.prompt.is_absolute() else ROOT / self.prompt

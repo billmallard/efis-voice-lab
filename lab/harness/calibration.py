@@ -197,6 +197,7 @@ def rejudge(cfg: LabConfig, run_path: Path, judges_to_run: list[str],
     from datetime import UTC, datetime
 
     from lab import judge
+    from lab.agent import speech
     from lab.harness import l2
     from lab.harness.judges import Judges
 
@@ -207,11 +208,14 @@ def rejudge(cfg: LabConfig, run_path: Path, judges_to_run: list[str],
     async def one(rec: dict[str, Any]) -> None:
         g = cases[rec["id"]]
         answer = rec["answer"] or "(no response)"
+        spoken = speech.normalize(answer) if cfg.agent.speech_normalize else answer
+        rec["spoken"] = spoken
+        rec["terms"] = l2.term_checks(g, spoken)
         jobs = {}
         if "policy" in judges_to_run:
             jobs["policy"] = j.policy(g.question, answer)
         if "speakability" in judges_to_run:
-            jobs["speakability"] = j.speakability(g.question, answer)
+            jobs["speakability"] = j.speakability(g.question, spoken)
         if "correctness" in judges_to_run and g.expected_behavior == "answer":
             jobs["correctness"] = j.correctness(g.question, answer, g.expected_answer,
                                                 g.notes)
