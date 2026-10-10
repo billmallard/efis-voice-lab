@@ -122,7 +122,7 @@ in Docker.
 
 ## Status
 
-M0–M4 are done: setup, ingestion, the retrieval service, the golden set with its L1 suite, and the text agent with its L2 suite and a human-calibrated judge. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
+M0–M4 are done: setup, ingestion, the retrieval service, the golden set with its L1 suite, and the text agent with its L2 suite and a human-calibrated judge. M5 (the voice agent, the L3 suite, failure attribution and the report) is built and baselined. Milestone notes are in [docs/notes/](docs/notes/). The work is tracked as [milestones M0–M9](../../milestones) and on the
 [project board](https://github.com/users/billmallard/projects/19). The full plan is in [docs/PLAN.md](docs/PLAN.md).
 
 | Milestone | Scope |
@@ -132,7 +132,7 @@ M0–M4 are done: setup, ingestion, the retrieval service, the golden set with i
 | M2 ✓ | Retrieval service: MCP + REST, p95 98 ms |
 | M3 ✓ | Golden set (35 cases, 9 doc defects) + L1 suite: hit rate 0.87 |
 | M4 ✓ | Text agent + L2 suite: faithful (0.92) but often wrong (0.55); judges calibrated against a human grader |
-| M5 | Voice agent + L3 suite + attribution report |
+| M5 | Voice agent + L3 suite + attribution report: 0 split turns, STT 94%, barge-in 0.4 s; 15 s to first audio |
 | D1 | Published test report on Cloudflare Pages (after M5) |
 | D2 | Hosted live demo: Pages + Tunnel + Access (after M5) |
 | M6 | Telephony + L4 suite |
