@@ -16,3 +16,4 @@ log.html
 report.html
 *.wav
 !golden/**/*.wav
+.gstack/

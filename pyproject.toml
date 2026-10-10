@@ -25,7 +25,7 @@ eval = [
     "langchain-community<0.4",
     "anthropic>=1.13.0",
 ]
-voice = ["pipecat-ai"]
+voice = ["pipecat-ai[whisper,kokoro,webrtc,websocket,silero,runner]"]
 
 [dependency-groups]
 dev = [

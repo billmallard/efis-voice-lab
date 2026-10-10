@@ -1,0 +1,32 @@
+# Caller personas for L3 (and L4): how a golden question is turned into caller audio.
+# Rendered by lab/voice/audio_synth.py with Kokoro; every field is deterministic, so a
+# persona renders the same audio every run.
+#
+#   voice        Kokoro voice id (am_/af_ American, bm_/bf_ British, em_ Spanish, ...)
+#   lang         Kokoro phonemizer language; an English line in a non-English voice
+#                gives accented English
+#   speed        speaking rate (1.0 = normal)
+#   noise        {kind: engine | pink, snr_db} mixed under the speech
+#   pause_at     split the line at this character (",") and pause pause_s there --
+#                a caller who hesitates mid-question
+#   lead_in_s    silence before speaking
+
+- id: clean_m
+  voice: am_michael
+- id: clean_f
+  voice: af_bella
+- id: fast
+  voice: am_adam
+  speed: 1.35
+- id: accent_gb
+  voice: bm_george
+  lang: en-gb
+- id: accent_es
+  voice: em_alex
+- id: cockpit_noise
+  voice: am_michael
+  noise: {kind: engine, snr_db: 5}
+- id: hesitant
+  voice: af_bella
+  pause_at: " "
+  pause_s: 1.2

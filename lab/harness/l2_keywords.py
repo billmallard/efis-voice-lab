@@ -30,6 +30,10 @@ class L2Keywords:
         self._turns: dict[str, Any] = {}
         self.l2_results: dict[str, dict[str, Any]] = {}
 
+    def _case(self, key: str):
+        """Golden case for a result key: a case id (L2), or "ID|variant|persona" (L3)."""
+        return self.cases[key.split("|")[0]]
+
     # ------------------------------------------------------------ lifecycle
 
     @keyword
@@ -94,7 +98,7 @@ class L2Keywords:
     def ask_agent(self, case_id: str) -> str:
         """Ask the golden question; record the turn, plus whether the plain question
         finds a gold source (to tell a bad agent query from a retrieval miss)."""
-        case = self.cases[case_id]
+        case = self._case(case_id)
         turn = self._run(self._agent.ask(case.question), timeout=600)
         self._turns[case_id] = turn
         rec = l2.evaluate(case, turn)
@@ -119,7 +123,7 @@ class L2Keywords:
         if not self.judge_enabled:
             logger.info("judges skipped (judge off)")
             return
-        case, rec, turn = self.cases[case_id], self.l2_results[case_id], self._turns[case_id]
+        case, rec, turn = self._case(case_id), self.l2_results[case_id], self._turns[case_id]
         answer = turn.answer or "(no response)"
         spoken = turn.spoken or answer
         is_answer = case.expected_behavior == "answer"
@@ -211,7 +215,7 @@ class L2Keywords:
     @keyword
     def answer_should_contain_expected_terms(self, case_id: str) -> None:
         terms = self.l2_results[case_id]["terms"]
-        case = self.cases[case_id]
+        case = self._case(case_id)
         problems = []
         if terms["missing"]:
             problems.append(f"missing {terms['missing']}")

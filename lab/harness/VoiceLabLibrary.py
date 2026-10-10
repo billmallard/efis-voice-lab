@@ -36,6 +36,7 @@ from lab import config
 from lab.config import ROOT
 from lab.harness import golden, l1
 from lab.harness.l2_keywords import L2Keywords
+from lab.harness.l3_keywords import L3Keywords
 
 RESULTS_DIR = ROOT / "results"
 
@@ -53,7 +54,8 @@ class _GoldenTestGenerator:
         if data.longname in self.done:
             return
         self.done.add(data.longname)
-        generate = {"L1": self._l1_tests, "L2": self._l2_tests}[self.lib.layer]
+        generate = {"L1": self._l1_tests, "L2": self._l2_tests,
+                    "L3": self._l3_tests}[self.lib.layer]
         generated = generate(data)
         # Generated cases first, so suite-level checks (latency, aggregates) see them all.
         handwritten = [t for t in data.tests if t not in generated]
@@ -116,6 +118,61 @@ class _GoldenTestGenerator:
             generated.append(test)
         return generated
 
+    def _l3_tests(self, data) -> list:
+        """variants: every golden case's spoken variants (voices alternate);
+        personas: a few canonical questions in every non-clean persona;
+        behavior: barge-in and caller silence."""
+        lib, generated = self.lib, []
+
+        def voice_test(case, variant: int, persona: str, group: str) -> None:
+            key = lib._l3_key(case.id, variant, persona)
+            test = data.tests.create(
+                name=f"{key} {lib.line_for(case.id, variant)}",
+                doc=case.notes or "",
+                tags=[case.id, case.category, case.expected_behavior, f"persona:{persona}",
+                      group, "golden", "robot:continue-on-failure"])
+            kw = test.body.create_keyword
+            kw(name="Call Agent", args=[case.id, str(variant), persona])
+            kw(name="Judge Voice Turn", args=[key])
+            kw(name="Transcript Should Match Question", args=[key])
+            kw(name="Utterance Should Be One Turn", args=[key])
+            if case.expected_behavior == "answer":
+                kw(name="Agent Should Answer", args=[key])
+                kw(name="Answer Should Be Correct", args=[key])
+                kw(name="Answer Should Be Faithful", args=[key])
+            elif case.expected_behavior == "decline":
+                kw(name="Agent Should Decline", args=[key])
+            else:
+                kw(name="Agent Should Ask For Clarification", args=[key])
+            kw(name="Answer Should Be Speakable", args=[key])
+            kw(name="Record Attribution", args=[key])
+            generated.append(test)
+
+        if "variants" in lib.l3_groups:
+            for case in lib.cases.values():
+                if not lib.selected(case):
+                    continue
+                variants = range(1, len(case.spoken_variants) + 1) or range(1)
+                for v in variants:
+                    voice_test(case, v, "clean_m" if v % 2 else "clean_f", "variants")
+        if "personas" in lib.l3_groups:
+            for cid in lib.persona_cases:
+                case = lib.cases[cid]
+                if lib.selected(case):
+                    for persona in lib.l3_personas:
+                        voice_test(case, 0, persona, "personas")
+        if "behavior" in lib.l3_groups:
+            test = data.tests.create(name="Barge-in: the caller cuts the bot off",
+                                     tags=["behavior", "barge-in"])
+            test.body.create_keyword(name="Bot Should Stop When Interrupted",
+                                     args=[lib.persona_cases[0]])
+            generated.append(test)
+            test = data.tests.create(name="Silence: the bot re-prompts a quiet caller",
+                                     tags=["behavior", "silence"])
+            test.body.create_keyword(name="Bot Should Reprompt After Silence")
+            generated.append(test)
+        return generated
+
 
 class _McpSession:
     """An MCP stdio client living on a background event loop (Robot is synchronous)."""
@@ -145,16 +202,22 @@ class _McpSession:
 
 
 @library(scope="SUITE", listener=None)
-class VoiceLabLibrary(L2Keywords):
+class VoiceLabLibrary(L2Keywords, L3Keywords):
     RESULTS_DIR = RESULTS_DIR
 
     def __init__(self, layer: str = "L1", ragas: str = "auto", repo: str = "", ids: str = "",
-                 judge: str = "", agent_model: str = ""):
+                 judge: str = "", agent_model: str = "",
+                 groups: str = "variants,personas,behavior",
+                 persona_cases: str = "HW-003,CTRL-004,SVS-001,OOS-001",
+                 personas: str = "fast,accent_gb,accent_es,cockpit_noise,hesitant"):
         """`repo` / `ids` (comma-separated) narrow the generated cases. Robot's --include
         cannot: tag filtering happens before the listener adds the tests.
 
         `judge` is the L2 name for the `ragas` switch: auto = on when ANTHROPIC_API_KEY
-        is set; on | off to force. `agent_model` overrides models.agent_llm.name."""
+        is set; on | off to force. `agent_model` overrides models.agent_llm.name.
+
+        L3 only: `groups` picks the generated test groups; `persona_cases` and
+        `personas` set the persona sweep (comma-separated)."""
         self.layer = layer
         self.repo_filter = repo.strip()
         self.id_filter = {i.strip() for i in ids.split(",") if i.strip()}
@@ -165,6 +228,9 @@ class VoiceLabLibrary(L2Keywords):
                               or (mode == "auto" and bool(os.environ.get("ANTHROPIC_API_KEY"))))
         self.judge_enabled = self.ragas_enabled
         self.agent_model = agent_model.strip()
+        self.l3_groups = {g.strip() for g in groups.split(",") if g.strip()}
+        self.persona_cases = [c.strip() for c in persona_cases.split(",") if c.strip()]
+        self.l3_personas = [p.strip() for p in personas.split(",") if p.strip()]
         self.k = self.cfg.retrieval.top_k
         self.ROBOT_LIBRARY_LISTENER = _GoldenTestGenerator(self)
         self._api: subprocess.Popen | None = None
@@ -178,6 +244,7 @@ class VoiceLabLibrary(L2Keywords):
         self.latencies_ms: list[float] = []
         self.started_at = datetime.now(UTC)
         self._l2_init()
+        self._l3_init()
 
     def _run(self, coro, timeout: float = 300):
         """Run a coroutine on the library's background event loop (Robot is synchronous)."""

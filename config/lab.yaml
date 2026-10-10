@@ -26,8 +26,15 @@ models:
     max_tokens: 2048
     usd_per_mtok_in: 1.00          # for the per-run cost line in reports
     usd_per_mtok_out: 5.00
-  stt: {provider: faster-whisper, size: small}
-  tts: {provider: piper, voice: null}
+  stt:                           # M5: CPU int8; Pascal + CTranslate2 CUDA not tried yet
+    provider: faster-whisper
+    size: small.en
+    device: cpu
+    compute_type: int8
+  tts:                           # the agent's voice (kokoro | piper)
+    provider: kokoro
+    voice: af_heart
+    speed: 1.0
 retrieval: {top_k: 5, p95_budget_ms: 300}
 agent:
   prompt: lab/agent/prompts/system.md
@@ -39,6 +46,11 @@ agent:
   speech_normalize: true         # lab/agent/speech.py: markup out, units as words, before TTS
 index:
   collection: efis_docs
+voice:
+  interruptions: true            # caller speech stops the bot (barge-in)
+  user_speech_timeout_s: 0.6     # a pause shorter than this continues the same turn
+  idle_timeout_s: 10             # caller silence before the bot re-prompts
+  idle_prompt: Are you still there? You can ask me about pyEfis, FIX Gateway, or navigation data.
 ingest:
   cache_dir: data/sources        # shallow clones, relative to the repo root
   max_chunk_chars: 1500          # longer sections split on paragraph boundaries

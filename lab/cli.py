@@ -150,6 +150,22 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve_voice(args: argparse.Namespace) -> int:
+    import runpy
+
+    # The Pipecat runner looks for bot() on __main__, so run serve.py as __main__.
+    sys.argv = [sys.argv[0], args.host, str(args.port)]
+    runpy.run_module("lab.voice.serve", run_name="__main__", alter_sys=True)
+    return 0
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    from lab.harness import report
+
+    print(f"report: {report.build(config.load())}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="lab", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -199,6 +215,14 @@ def main(argv: list[str] | None = None) -> int:
                    help="rejudge: comma-separated judges to re-run")
     p.add_argument("--ids", help="rejudge: only these case ids")
     p.set_defaults(fn=cmd_calibrate)
+
+    p = sub.add_parser("serve-voice", help="browser demo: talk to the voice agent (WebRTC)")
+    p.add_argument("--host", default="localhost")
+    p.add_argument("--port", type=int, default=7860)
+    p.set_defaults(fn=cmd_serve_voice)
+
+    p = sub.add_parser("report", help="static HTML report from the latest L1/L2/L3 runs")
+    p.set_defaults(fn=cmd_report)
 
     args = ap.parse_args(argv)
     # Chunk text is full of Unicode; a Windows console defaults to cp1252.
