@@ -64,7 +64,7 @@ def meets(value: float | None, threshold: float | None, higher_is_better: bool =
 Metric = tuple[str, Callable[[dict[str, Any]], "float | None"], str, "str | None", bool]
 METRICS: dict[str, list[Metric]] = {
     "L1": [
-        ("Gold source in top 5", lambda a: a["hit_rate"], "rate", "l1_hit_rate", True),
+        ("Gold source in top {k}", lambda a: a["hit_rate"], "rate", "l1_hit_rate", True),
         ("MRR", lambda a: a["mrr"], "score", "l1_mrr", True),
     ],
     "L2": [
@@ -80,6 +80,11 @@ METRICS: dict[str, list[Metric]] = {
          "ms", "time_to_first_audio_ms", False),
     ],
 }
+
+
+def label_for(label: str, run: dict[str, Any] | None) -> str:
+    """Fill a label's {k} with the run's retrieval depth, or a plain "k" across runs."""
+    return label.format(k=(run or {}).get("k", "k"))
 
 
 def metric_values(layer: str, run: dict[str, Any]) -> list[float | None]:
@@ -123,7 +128,7 @@ def metric_rows(layer: str, run: dict[str, Any], prev: dict[str, Any] | None,
     rows = []
     for (label, _, kind, tkey, higher), cur, old in zip(METRICS[layer], cur_vals, prev_vals,
                                                          strict=True):
-        rows.append((label, fmt(cur, kind), meets(cur, threshold(layer, run, tkey, t), higher),
+        rows.append((label_for(label, run), fmt(cur, kind), meets(cur, threshold(layer, run, tkey, t), higher),
                      delta(cur, old, kind, higher)))
     return rows
 
@@ -298,7 +303,7 @@ def trend_svg(layer: str, runs: list[dict[str, Any]], index: int,
     dots = []
     for i, (r, v) in enumerate(pts):
         n = r["aggregate"].get("cases", r["aggregate"].get("turns"))
-        tip = (f"{label}: {fmt(v, kind)}\n{utc(r)}\n"
+        tip = (f"{label_for(label, r)}: {fmt(v, kind)}\n{utc(r)}\n"
                f"commit {r['lab_commit']} · {n} cases")
         dots.append(f'<g class="pt"><title>{e(tip)}</title><circle class="hit" '
                     f'cx="{x(i):.1f}" cy="{y(v):.1f}" r="12"/><circle class="dot" '
@@ -311,6 +316,7 @@ def trend_svg(layer: str, runs: list[dict[str, Any]], index: int,
     if len(pts) > 1:
         dates += (f'<text class="axis" x="{last_x:.1f}" y="{H - 4}" text-anchor="end">'
                   f'{e(when(pts[-1][0]))}</text>')
+    label = label_for(label, None)
     return f"""<figure class="trend"><figcaption>{e(label)}</figcaption>
 <svg viewBox="0 0 {W} {H}" role="img" aria-label="{e(label)} over {len(pts)} runs">
 {grid}{target}<polyline class="line" points="{line}"/>{''.join(dots)}{end_label}{dates}
@@ -350,7 +356,7 @@ def runs_table(history: dict[str, list[dict[str, Any]]], repo_url: str | None) -
             head = METRICS[layer][0]
             rows.append((r["started_at"], f"""<tr><td>{e(utc(r)[:-4])}</td>
 <td>{layer}</td><td>{e(n)}</td><td>{commit_link(r['lab_commit'], repo_url)}</td>
-<td>{e(agent)}</td><td>{e(head[0])} {fmt(metric_values(layer, r)[0], head[2])}</td>
+<td>{e(agent)}</td><td>{e(label_for(head[0], r))} {fmt(metric_values(layer, r)[0], head[2])}</td>
 <td>{'—' if cost is None else f'${cost:.2f}'}</td></tr>"""))
     body = "".join(h for _, h in sorted(rows, reverse=True))
     return f"""<section><h2>Runs</h2><div class="scroll"><table class="runs">
