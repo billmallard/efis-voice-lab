@@ -117,13 +117,13 @@ def fetch_audio(layer: str, run: dict[str, Any], dest: Path) -> int:
 
 def publish(layer: str, src: Path | None = None, audio: bool = True) -> Path:
     src = src or ROOT / "results" / layer / "latest.json"
-    text = src.read_text(encoding="utf-8")
-    run = json.loads(text)
+    raw = src.read_bytes()
+    run = json.loads(raw)
     if run.get("layer", layer) != layer:
         raise SystemExit(f"publish: {src} is an {run['layer']} run, not {layer}")
     dest = RUNS / layer / f"{stamp(run)}.json"
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(text, encoding="utf-8")
+    dest.write_bytes(raw)  # byte for byte: text mode would add CRLF on Windows
     if audio and audio_sources(run):
         tag = audio_tag(layer, run)
         files = encode_audio(run, CACHE / tag)
