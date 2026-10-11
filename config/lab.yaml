@@ -35,7 +35,7 @@ models:
     provider: kokoro
     voice: af_heart
     speed: 1.0
-retrieval: {top_k: 5, p95_budget_ms: 300}
+retrieval: {top_k: 2, p95_budget_ms: 300}   # D1 demo: a deliberate regression (was 5)
 agent:
   prompt: lab/agent/prompts/system.md
   tools: [search_docs]           # MCP tools offered to the LLM (get_source returns whole docs)
