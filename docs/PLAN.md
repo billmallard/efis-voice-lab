@@ -327,6 +327,164 @@ The report shows pass rate per layer, a count of failures by tag, and per-case d
 
 ---
 
+## Beyond the lab: ATC transcription and cockpit voice (phases 2–4)
+
+> Scoping only. Everything above is phase 1, a voice agent tested on the bench. The phases
+> below move toward the aircraft, and each one opens with a spike and a decision point. Nothing
+> here is approved for flight. A transcript is an advisory aid; the pilot still listens to the
+> radio.
+
+The lab carries over: the harness, the golden-set discipline, failure attribution, the
+published report, and the habit of measuring on the target hardware before choosing it. What
+changes is the audio. ATC speech is narrowband AM radio: clipped and noisy, fast, full of
+phraseology, callsigns and numbers. Off-the-shelf speech models do badly on it. On ATCO2,
+Whisper small scores about 63% WER out of the box and about 23% after fine-tuning on ATC
+speech. Larger fine-tuned models report about 6.5–15% on their own test sets. Most of the
+public training data is European; US-accented ATC is underrepresented.
+
+### Phase 2 — Live ATC transcription on the bench
+
+**Goal:** turn live ATC audio into a running transcript in near real time, and measure how
+right it is, especially the parts that matter: callsigns, frequencies, altitudes, headings,
+runways and squawk codes.
+
+**Audio sources** (all are swappable, like every model in phase 1):
+- **SDR, the default source.** An RTL-SDR or Airspy-class receiver and an airband antenna,
+  with AM demodulation on 25 kHz (and 8.33 kHz) channels across 118–137 MHz. Use
+  `rtl_airband`, `rtl_fm` or SoapySDR, one or more channels at once. Squelch and carrier
+  detection mark where each transmission starts and ends.
+- **Network streams.** Our own SDR served over the network (for example a receiver near
+  a busier airport), so the ingest takes a generic stream URL. Third-party feeds are not a
+  live input.
+- **Recorded files.** These feed the golden set, any fine-tuning, and the CI runs:
+  - public ATC corpora (ATCOSIM, the ATCO2 test subset, UWB-ATCC) and any comparable sets
+    we find;
+  - our own hand-transcribed SDR recordings, which are the US-accent set.
+
+  LiveATC.net archives would only ever be **training and evaluation data**, never a live
+  input. Their audio is LiveATC's copyright and their terms restrict derivative use, so
+  using it needs their written permission first. It's optional: the corpora and our SDR
+  cover the need.
+
+**Pipeline:** source → transmission segmentation (squelch plus VAD; a transmission is the
+unit, not a sentence) → STT → aviation normalizer → optional entity extraction → transcript
+feed (websocket plus a JSON log).
+- **STT:** faster-whisper with an ATC fine-tuned Whisper checkpoint, chosen at a decision
+  point. Biasing the prompt with local facility names and expected callsigns is cheap; try
+  it before fine-tuning.
+- **Normalizer:** spoken aviation forms to written ones. "November one two three alpha
+  bravo" becomes `N123AB`, "one one niner point two" becomes `119.2`, "flight level three
+  five zero" becomes `FL350`, "squawk seven seven zero zero" becomes `7700`. It's
+  deterministic and unit-tested, the same split as phase 1's speech normalizer.
+- **Extraction** (later): callsign, instruction type and values as structured fields.
+  Rules first, a small LLM only if the rules run out.
+
+**Tests: the A-layers** (same harness, same report site):
+- **A1 audio and segmentation:** transmissions found against a hand-marked timeline;
+  splits, merges, and missed short calls ("roger").
+- **A2 transcription:** WER, plus **critical-entity error rate** (CER-E) for callsigns,
+  frequencies, altitudes and flight levels, headings, runways and squawks. WER counts
+  "two/too" the same as a wrong altitude, so CER-E is the headline number.
+- **A3 latency:** end of transmission to text on screen, p50 and p95. Target: p95 under
+  2 s on the edge hardware.
+- **A4 robustness:** weak signals, step-ons (two stations at once), clipped starts, cockpit
+  noise added to the recordings, and fast controllers. These are personas, as in L3.
+- **Attribution tags:** `AUDIO_SOURCE` (demod, squelch, levels), `SEGMENTATION`,
+  `STT_MISHEARD`, `NORMALIZER`, `EXTRACTION`, `LATENCY`.
+- **Golden set:** public corpora (ATCOSIM, the ATCO2 test subset, UWB-ATCC; check each
+  license, several are non-commercial), plus a US set: our own SDR recordings of a local
+  frequency, transcribed by hand with the entities marked. Raw recordings stay private by
+  default; the report publishes metrics, and audio excerpts only after review.
+
+**Edge hardware matrix**, the core deliverable for phase 3: run the same suite on each
+candidate box and publish WER, CER-E, latency, power draw and thermals side by side. See
+*Edge hardware candidates* below.
+
+**Milestones:**
+- **P2.0 spike + decision points:** one SDR channel and one recorded file through two or
+  three candidate models; survey ATC corpora and their licenses. Decide the model
+  shortlist and the segmentation approach.
+- **P2.1 ingest:** SDR and stream inputs, segmentation, transcript feed. **Accept:** a live
+  local frequency produces one transcript line per transmission.
+- **P2.2 STT + normalizer:** **Accept:** the normalizer's unit tests pass, and a baseline
+  run on the golden set is published with WER and CER-E.
+- **P2.3 A-suites in CI:** recorded audio only; CI never touches live radio.
+  **Accept:** a regression in the normalizer or the model shows on a branch preview, as in D1.
+- **P2.4 hardware matrix:** **Accept:** the published matrix names a recommended phase 3
+  box, backed by measurements.
+- **P2.5 live captions demo:** a browser page showing a live SDR frequency transcribed.
+  **Accept:** p95 under 2 s from end of transmission to text on the chosen edge box.
+
+### Edge hardware candidates
+
+ATC audio comes in bursts: one transmission of 2–8 s at a time, with gaps between. The box
+has to finish each transmission well before the next one ends. Real time here means a
+real-time factor well under 1 for the chosen model, not continuous streaming. Accuracy
+needs an ATC fine-tuned model of small size or larger, and that is what sets the hardware.
+
+| Candidate | Power | What it can run (to be measured in P2.4) | Fit |
+|---|---|---|---|
+| Raspberry Pi 5, 8 GB, CPU only | ~5–10 W | tiny/base in real time; small is borderline, several seconds per transmission | Too slow for the models that are accurate enough on ATC; fine for a capture front end |
+| Pi 5 + Hailo AI HAT+ (Hailo-8 / 8L) | +3–5 W | Whisper base/tiny with the encoder on the NPU (vendor demos show live captioning) | Speed is there, but the model sizes are below what ATC accuracy needs, and getting a fine-tuned checkpoint onto the NPU is unproven. Spike only. |
+| x86 mini PC (N100/N150 class), CPU only | ~10–15 W | small int8 at about phase 1's lab speeds | A workable fallback; no headroom for phase 4 |
+| **NVIDIA Jetson Orin Nano Super, 8 GB** | 7–25 W | faster-whisper small at about 0.15× real time (≈3 s for 20 s of audio); medium is plausible with TensorRT | **Recommended starting point:** a fine-tuned small/medium model with headroom, and a CUDA stack that's the same as the lab's |
+| Jetson Orin NX, 16 GB | 10–25 W | STT plus a 3–8B intent model plus TTS at once | Phase 4 target if the Orin Nano runs out of memory |
+
+Sources for the numbers above, all to be re-measured here: ATC WER from the synthetic-audio
+ATC ASR study (arXiv 2606.21340) and the fine-tuned Whisper model cards on Hugging Face
+(`jacktol/whisper-medium.en-fine-tuned-for-ATC`, `jacktol/whisper_large_v3_finetuned_6.5_eval_wer`);
+Orin Nano timings from NVIDIA's `whisper_trt` benchmarks and the Speaches project; Hailo
+from the Hailo community's Pi 5 + Hailo-8L Whisper work.
+
+Aircraft-specific requirements, whichever box wins:
+- fully offline;
+- 14/28 V power through a proper DC-DC supply with transient protection;
+- heat soak on the ramp (fanless enclosures throttle, so measure sustained throughput, not
+  burst);
+- vibration (no spinning disks; secure the NVMe and the connectors);
+- a boot time that is acceptable on engine start;
+- when it fails, it fails silent, and it never touches another system.
+
+### Phase 3 — In-cockpit transcription and display (outline)
+
+- **Audio:** prefer the receive audio from the audio panel or COM radio. It's the same audio
+  the pilot hears, with no second antenna. If a separate SDR is used, it must blank or survive
+  the aircraft's own transmitter: a receiver near a keyed 10 W COM gets overloaded.
+- **Display:** a transcript widget on the EFIS, with the newest line first. The aircraft's
+  own callsign is highlighted, and frequency changes and clearances are pulled out as
+  fields. How text reaches pyEfis is a decision point: FIX Gateway is built for scalar
+  values, so the options are string keys versus a separate local transcript socket.
+- **Rules:** advisory only, so it never replaces listening or the readback. Transcripts
+  are timestamped and kept per flight for debrief. A stale or failed transcriber shows as
+  such and never blanks or slows the primary display.
+- **Testing:** the phase 2 suites plus ground runs with engine noise, then flights with a
+  safety pilot. Compare the transcripts against the cockpit audio recording after each
+  flight.
+
+### Phase 4 — Headset voice control (outline)
+
+- **Path separation, the first requirement.** Commands come only from the pilot's mic
+  while a dedicated push-to-command switch is held. They never come from radio audio or the
+  ATC transcript, which can't trigger an action by construction. Otherwise anything spoken
+  on frequency becomes an injection path into the aircraft.
+- **Scope in steps:**
+  1. read-only queries and checklist read-out;
+  2. non-critical settings, each with a spoken confirmation ("Set COM1 standby one one
+     niner point two? Say confirm"): baro, heading bug, standby frequencies;
+  3. nothing touching flight controls, autopilot engagement or engine controls without a
+     separate design review and hazard analysis.
+- **Interface:** writes go through FIX Gateway keys from an allowlist, with every command
+  and confirmation logged. The phase 1 agent pattern (tools, policy judge, attribution)
+  carries over, with commands in place of the doc search.
+- **Audio:** on-device STT and TTS into the intercom. Headset mics at 85–95 dB cockpit noise
+  become new L3 personas. Spoken answers must be short, which phase 1's speakability judge
+  already enforces.
+- **Testing:** the L3 harness with command golden sets: wrong-command rate, false triggers
+  (must be zero), confirmation bypass (must be zero) and latency, then ground and flight
+  testing as in phase 3.
+
+---
+
 ## Configuration sketch (`config/lab.yaml`)
 
 ```yaml
