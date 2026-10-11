@@ -6,7 +6,7 @@ not written down anywhere else.
 
 ## Where it stands
 
-M0 to M5 are done and merged; `main` is clean at the M5 acceptance merge (#23).
+M0 to M5 and D1 are done and merged. The published report is live (D1, #25).
 
 | Layer | What runs it | Reference run |
 |---|---|---|
@@ -24,15 +24,15 @@ SmallWebRTC). The maintainer talked to it on 2026-10-11, which was M5's acceptan
 `runs/` and push. Branches deploy to `<branch>.efis-voice-lab.pages.dev`. Publish full runs
 only: a slice skews the trend lines. Details in [notes/D1.md](notes/D1.md).
 
-**Next:** the maintainer hasn't chosen. The options offered were:
-- **D1:** publish `lab report` to Cloudflare Pages from CI. This was recommended first,
-  because it is the public portfolio piece.
+**Next:** the maintainer hasn't chosen. The options:
 - **M6:** telephony through Asterisk. It opens with a decision point: how SIP reaches the
   agent. Spike it, then ask.
 - **Tuning.** The maintainer said to tune after the milestones are done, not during them.
-  Record findings and don't chase them.
+  Record findings and don't chase them. The report site now shows each tuning run's
+  effect against the last, so publish every full run.
+- **D2:** the hosted live demo; it shares the Cloudflare Tunnel with M8.
 
-Open issues: #7 M6, #8 M7, #9 M8, #10 M9, #13 D1, #14 D2.
+Open issues: #7 M6, #8 M7, #9 M8, #10 M9, #14 D2.
 
 ## Working with the maintainer
 
