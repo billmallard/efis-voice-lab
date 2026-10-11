@@ -60,6 +60,12 @@ async def call(url: str, question: str) -> int:
     track = CallerTrack(pcm, delay_s=8.0)
     pc = RTCPeerConnection()
     pc.addTrack(track)
+    # Like the browser UI: a data channel that says hello once and then goes quiet.
+    # Pipecat's connection treats a channel silent for 3 s as disconnected, which is the
+    # race lab.voice.serve.trust_peer_connection works around; without a channel this
+    # test would not see it.
+    channel = pc.createDataChannel("chat")
+    channel.on("open", lambda: channel.send('{"label": "rtvi-ai", "type": "client-ready"}'))
     remote: asyncio.Future = asyncio.get_running_loop().create_future()
     pc.on("track", lambda t: remote.done() or t.kind != "audio" or remote.set_result(t))
     await pc.setLocalDescription(await pc.createOffer())
