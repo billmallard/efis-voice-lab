@@ -2,6 +2,8 @@
 
 The plan is [docs/PLAN.md](docs/PLAN.md). It is a working draft, not a contract.
 
+**Start with [docs/HANDOFF.md](docs/HANDOFF.md):** where the lab stands, how the machine is set up, and the gotchas the code doesn't show.
+
 ## Working rules
 
 - Work **one milestone at a time**. A milestone is done when its acceptance criteria pass. Stop and summarize before starting the next one.
