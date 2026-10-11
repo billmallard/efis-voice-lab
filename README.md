@@ -31,7 +31,7 @@ caused the failure** (STT, retrieval, generation, policy, latency, turn-taking, 
 Default stack, swappable through config: Python 3.11+ / `uv`, Docker Compose, Qdrant, Ollama
 (embeddings + the agent under test), FastMCP, FastAPI, Pipecat, faster-whisper, Piper/Kokoro, and Asterisk.
 The judge is hosted: Claude Haiku 4.5, a different model family from the local agent it grades.
-The test report and the live demo are hosted on Cloudflare (Pages, Tunnel, Access).
+The [test report](https://efis-voice-lab.pages.dev) and the live demo are hosted on Cloudflare (Pages, Tunnel, Access).
 
 ## Quickstart
 
@@ -114,6 +114,18 @@ Every failed case gets one root-cause tag (STT, turn-taking, policy, retrieval, 
 generation, speakability, latency; see [lab/harness/attribution.py](lab/harness/attribution.py)).
 `uv run lab report` renders all three layers, with tags, judge reasons and both sides'
 audio, to `results/report/index.html`.
+
+The published report is at **[efis-voice-lab.pages.dev](https://efis-voice-lab.pages.dev)**.
+It is the same page, rendered from every published run, with trend charts and the change
+since the previous run. Publishing a run is one command on the lab host:
+
+```sh
+uv run lab publish L1 L2 L3    # runs/<layer>/<stamp>.json; L3 audio goes to a GitHub release
+git add runs && git commit -s -m "runs: ..." && git push   # CI renders and deploys
+```
+
+CI deploys `main` to the public site and every other branch to its own preview, so a run
+published on a test branch shows there first ([.github/workflows/site.yml](.github/workflows/site.yml)).
 
 Models and endpoints live in [config/lab.yaml](config/lab.yaml). `LAB_OLLAMA_URL` and `LAB_QDRANT_URL`
 point the lab at services elsewhere, such as a home-lab server. `LAB_AGENT_LLM_URL` points

@@ -1,0 +1,45 @@
+name: site
+
+# D1: render the report from the published runs (runs/) and deploy it to Cloudflare Pages.
+# main is the public site; every other branch gets its own preview URL, so a run published
+# on a test branch shows up there before it reaches main. The suites themselves run on the
+# lab host (see lab/harness/publish.py); this job only renders what was committed.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv sync --locked
+      - name: build (audio comes from the latest L3 run's release)
+        run: uv run lab site
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: site/
+      - name: deploy to Cloudflare Pages
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: >
+          npx --yes wrangler@4 pages deploy site --project-name efis-voice-lab
+          --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA"
+      - name: no deploy token
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::notice::CLOUDFLARE_API_TOKEN is not set; the site was built, not deployed"

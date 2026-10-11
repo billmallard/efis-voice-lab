@@ -1,0 +1,701 @@
+{
+  "layer": "L1",
+  "started_at": "2026-10-10T01:39:33+00:00",
+  "finished_at": "2026-10-10T01:44:49+00:00",
+  "lab_commit": "a1a9428-dirty",
+  "index": {
+    "collection": "efis_docs",
+    "embedding_model": "nomic-embed-text",
+    "sources": {
+      "billmallard/pyEfis@master": "6d8fa2dcb50fc8280702933de31ee9a4a309cb6d",
+      "makerplane/pyEfis@master": "2e1cbf58baa6214c58b9f454bf302b3acf11fd52",
+      "makerplane/FIX-Gateway@master": "ed08cb1ed7c94d795340fad81c7a6c824d14d8e8",
+      "makerplane/Documentation@master": "923c68a32eba4b0eaa607f005dbbfa283c104faa",
+      "billmallard/makerplane-data@main": "258d837efd3ec91a8ef3b66ca92aa144b4a5bf34"
+    }
+  },
+  "k": 5,
+  "judge": "anthropic:claude-haiku-4-5",
+  "judge_usage": {
+    "requests": 180,
+    "input_tokens": 408871,
+    "output_tokens": 33701,
+    "usd": 0.5774
+  },
+  "thresholds": {
+    "l1_hit_rate": 0.85,
+    "context_precision": 0.7,
+    "context_recall": 0.7,
+    "faithfulness": 0.8,
+    "speakability": 0.8,
+    "stt_wer_max": 0.25,
+    "time_to_first_audio_ms": 1500.0,
+    "p95_budget_ms": 300
+  },
+  "aggregate": {
+    "cases": 30,
+    "hit_rate": 0.8667,
+    "mrr": 0.75,
+    "precision_at_k": 0.3,
+    "traps_above_gold": [
+      "HW-003",
+      "INST-001",
+      "VER-002"
+    ],
+    "misses": [
+      "ARCH-002",
+      "DEV-002",
+      "INST-001",
+      "VER-002"
+    ],
+    "origin_accuracy": 1.0,
+    "ragas_context_precision": 0.6731,
+    "ragas_context_recall": 0.7425,
+    "latency_ms": {
+      "n": 30,
+      "p50": 61.9,
+      "p95": 76.2,
+      "max": 90.5
+    }
+  },
+  "cases": [
+    {
+      "id": "ARCH-001",
+      "category": "factual",
+      "question": "Where does pyEfis get its flight data?",
+      "k": 5,
+      "gold_rank": 2,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 0.5,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/getting_started.rst",
+        "heading": "Getting Started",
+        "score": 0.8096664
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "ARCH-002",
+      "category": "factual",
+      "question": "How does pyEfis connect to FIX Gateway?",
+      "k": 5,
+      "gold_rank": null,
+      "hit": false,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Running-from-Source.md",
+        "heading": "Running from Source > 4. fix-gateway (the data source)",
+        "score": 0.8148272
+      },
+      "ragas_context_precision": 0.0,
+      "ragas_context_recall": 0.0
+    },
+    {
+      "id": "HW-001",
+      "category": "factual",
+      "question": "What's the reference hardware for pyEfis?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.4,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "README.rst",
+        "heading": "pyEfis > Hardware",
+        "score": 0.7988181
+      },
+      "ragas_context_precision": 0.75,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "HW-002",
+      "category": "factual",
+      "question": "What's the minimum hardware to run pyEfis?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "README.rst",
+        "heading": "pyEfis > Hardware > Minimum (EFIS without SVS)",
+        "score": 0.8105814
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "HW-003",
+      "category": "conditional",
+      "question": "Do I need a GPU to run pyEfis?",
+      "k": 5,
+      "gold_rank": 2,
+      "hit": true,
+      "trap_rank": 1,
+      "trap_above_gold": true,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 0.5,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/perf_baseline_gpu_required.md",
+        "heading": "P0 baseline \u2014 gpu-required branch > Pi 5 access",
+        "score": 0.797727
+      },
+      "ragas_context_precision": 0.5,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "HW-004",
+      "category": "conditional",
+      "question": "What happens if synthetic vision is turned on but there's no usable GPU?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.4,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "src/pyefis/config/includes/ahrs/svs.yaml",
+        "heading": "instruments",
+        "score": 0.6834932
+      },
+      "ragas_context_precision": 0.9167,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "HW-005",
+      "category": "conflict",
+      "question": "How much storage does the North America terrain data need?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.6,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/makerplane-data",
+        "origin": "fork",
+        "path": "docs/terrain.md",
+        "heading": "Terrain data (Phase D) > Storage",
+        "score": 0.8223472
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "CTRL-001",
+      "category": "conflict",
+      "question": "How do I change the altimeter setting?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Pilots-Guide.md",
+        "heading": "Pilot's Guide > Common in-flight adjustments > Setting the altimeter (baro)",
+        "score": 0.80570316
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "CTRL-002",
+      "category": "factual",
+      "question": "How do I change the airspeed display between indicated, true, and ground speed?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Pilots-Guide.md",
+        "heading": "Pilot's Guide > Common in-flight adjustments > Airspeed source",
+        "score": 0.80005825
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "CTRL-003",
+      "category": "factual",
+      "question": "How do I switch between screens?",
+      "k": 5,
+      "gold_rank": 2,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 0.5,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Screens-Overview.md",
+        "heading": "Screens Overview > Switching screens",
+        "score": 0.7286682
+      },
+      "ragas_context_precision": 0.0,
+      "ragas_context_recall": 0.75
+    },
+    {
+      "id": "CTRL-004",
+      "category": "speakability",
+      "question": "How do I switch units between Fahrenheit and Celsius?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Pilots-Guide.md",
+        "heading": "Pilot's Guide > Common in-flight adjustments > Units",
+        "score": 0.7321124
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "SVS-001",
+      "category": "procedural",
+      "question": "Is synthetic vision on by default, and how do I turn it on?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.6,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "src/pyefis/config/includes/ahrs/svs.yaml",
+        "heading": "instruments",
+        "score": 0.72687626
+      },
+      "ragas_context_precision": 0.75,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "SVS-002",
+      "category": "factual",
+      "question": "Where does the synthetic vision data come from?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "README.rst",
+        "heading": "pyEfis > Synthetic Vision (SVS)",
+        "score": 0.7358235
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "VFR-001",
+      "category": "conflict",
+      "question": "How do I set up the virtual VFR chart data?",
+      "k": 5,
+      "gold_rank": 4,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.4,
+      "reciprocal_rank": 0.25,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "INSTALLING.md",
+        "heading": "Installing pyEFIS and FIX-Gateway > Data needed for Virtual VFR",
+        "score": 0.7485194
+      },
+      "ragas_context_precision": 0.325,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "DEV-001",
+      "category": "factual",
+      "question": "Which install extras does pyEfis need?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.6,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/running_from_source.md",
+        "heading": "Running pyEfis from source (laptop / developer) > 3. Install dependencies  (the step that trips people up)",
+        "score": 0.76508236
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "DEV-002",
+      "category": "speakability",
+      "question": "How do I run pyEfis's tests?",
+      "k": 5,
+      "gold_rank": null,
+      "hit": false,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/perf_baseline_gpu_required.md",
+        "heading": "P0 baseline \u2014 gpu-required branch > Pi 5 access",
+        "score": 0.7795551
+      },
+      "ragas_context_precision": 0.0,
+      "ragas_context_recall": 0.0
+    },
+    {
+      "id": "DEV-003",
+      "category": "procedural",
+      "question": "How do I run pyEfis from source on a laptop?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.8,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/running_from_source.md",
+        "heading": "Running pyEfis from source (laptop / developer)",
+        "score": 0.8400321
+      },
+      "ragas_context_precision": 0.0,
+      "ragas_context_recall": 0.25
+    },
+    {
+      "id": "INST-001",
+      "category": "conflict",
+      "question": "How do I install pyEfis and FIX Gateway on a Raspberry Pi?",
+      "k": 5,
+      "gold_rank": null,
+      "hit": false,
+      "trap_rank": 1,
+      "trap_above_gold": true,
+      "precision_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "top_hit": {
+        "repo": "makerplane/pyEfis",
+        "origin": "upstream",
+        "path": "INSTALLING.md",
+        "heading": "Installing pyEFIS and FIX-Gateway",
+        "score": 0.82446724
+      },
+      "ragas_context_precision": 0.3333,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "DATA-001",
+      "category": "factual",
+      "question": "What does the DATA annunciator on the PFD mean?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.4,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Widgets-System.md",
+        "heading": "System & Status Widgets > `data_annunciation`",
+        "score": 0.7341838
+      },
+      "ragas_context_precision": 0.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "DATA-002",
+      "category": "procedural",
+      "question": "How do I update the navigation data?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.4,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Pilots-Guide.md",
+        "heading": "Pilot's Guide > Data currency & updates",
+        "score": 0.73678136
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "DATA-003",
+      "category": "factual",
+      "question": "What is makerplane-data?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/makerplane-data",
+        "origin": "fork",
+        "path": "README.md",
+        "heading": "makerplane-data",
+        "score": 0.7709789
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 0.8571
+    },
+    {
+      "id": "LIC-001",
+      "category": "factual",
+      "question": "What license is pyEfis under?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "README.rst",
+        "heading": "pyEfis > Licensing & Patents (this fork)",
+        "score": 0.8006592
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "VER-001",
+      "category": "version",
+      "question": "Does pyEfis have synthetic vision?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "README.rst",
+        "heading": "pyEfis > Synthetic Vision (SVS)",
+        "score": 0.7321104
+      },
+      "expected_origin": "fork",
+      "origin_ok": true,
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "VER-002",
+      "category": "version",
+      "question": "Does pyEfis have a moving map?",
+      "k": 5,
+      "gold_rank": null,
+      "hit": false,
+      "trap_rank": 1,
+      "trap_above_gold": true,
+      "precision_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/moving_map_spec.md",
+        "heading": "Moving Map \u2014 specification > 2. Relationship to pyAvMap (decided direction)",
+        "score": 0.8115456
+      },
+      "expected_origin": "fork",
+      "origin_ok": true,
+      "ragas_context_precision": 0.9167,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "VER-003",
+      "category": "version",
+      "question": "Is running make init enough to install everything pyEfis needs?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.6,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/wiki/Running-from-Source.md",
+        "heading": "Running from Source > 3. Install dependencies (the step that trips people up)",
+        "score": 0.7922576
+      },
+      "expected_origin": "fork",
+      "origin_ok": true,
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 0.75
+    },
+    {
+      "id": "FGW-001",
+      "category": "factual",
+      "question": "What is the FIX Gateway database?",
+      "k": 5,
+      "gold_rank": 4,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 0.25,
+      "top_hit": {
+        "repo": "makerplane/FIX-Gateway",
+        "origin": "upstream",
+        "path": "README.md",
+        "heading": "FIX-Gateway > What This Is",
+        "score": 0.8271114
+      },
+      "ragas_context_precision": 0.25,
+      "ragas_context_recall": 0.75
+    },
+    {
+      "id": "FGW-002",
+      "category": "procedural",
+      "question": "How do I write a FIX Gateway plugin?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "makerplane/FIX-Gateway",
+        "origin": "upstream",
+        "path": "doc/plugin.rst",
+        "heading": "Plugin Development",
+        "score": 0.8335893
+      },
+      "ragas_context_precision": 1.0,
+      "ragas_context_recall": 0.75
+    },
+    {
+      "id": "FGW-003",
+      "category": "conflict",
+      "question": "Which FIX Gateway command starts the server, and which starts the client?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.8,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "makerplane/FIX-Gateway",
+        "origin": "upstream",
+        "path": "doc/getting_started.rst",
+        "heading": "Getting Started > Running the client",
+        "score": 0.82572806
+      },
+      "ragas_context_precision": 0.2,
+      "ragas_context_recall": 1.0
+    },
+    {
+      "id": "FGW-004",
+      "category": "version",
+      "question": "Can FIX Gateway connect to X-Plane?",
+      "k": 5,
+      "gold_rank": 1,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 1.0,
+      "top_hit": {
+        "repo": "makerplane/FIX-Gateway",
+        "origin": "upstream",
+        "path": "doc/plugins/xplane.rst",
+        "heading": "XPlane Flight Simulator Plugin",
+        "score": 0.76749665
+      },
+      "expected_origin": "upstream",
+      "origin_ok": true,
+      "ragas_context_precision": 0.75,
+      "ragas_context_recall": 0.5
+    },
+    {
+      "id": "OOS-001",
+      "category": "out_of_scope",
+      "question": "Is pyEfis FAA certified? Can I use it as my primary attitude reference in IMC?",
+      "k": 5,
+      "gold_rank": 2,
+      "hit": true,
+      "trap_rank": null,
+      "trap_above_gold": false,
+      "precision_at_k": 0.2,
+      "reciprocal_rank": 0.5,
+      "top_hit": {
+        "repo": "billmallard/pyEfis",
+        "origin": "fork",
+        "path": "docs/avionics_reference.md",
+        "heading": "Avionics Reference \u2014 standards basis for pyEfis instruments > 5. Attitude indicator (AI) \u2014 source material",
+        "score": 0.7735872
+      },
+      "ragas_context_precision": 0.5,
+      "ragas_context_recall": 0.6667
+    }
+  ]
+}

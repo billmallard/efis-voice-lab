@@ -166,6 +166,30 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from lab.harness import publish
+
+    if args.src and len(args.layers) != 1:
+        raise SystemExit("publish: --from takes exactly one layer")
+    for layer in args.layers:
+        dest = publish.publish(layer, Path(args.src) if args.src else None,
+                               audio=not args.no_audio)
+        print(f"publish: {dest.relative_to(publish.ROOT)}")
+    print("publish: commit runs/ and push; CI rebuilds the site")
+    return 0
+
+
+def cmd_site(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from lab.harness import site
+
+    print(f"site: {site.build(config.load(), Path(args.out) if args.out else site.OUT)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="lab", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -223,6 +247,17 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("report", help="static HTML report from the latest L1/L2/L3 runs")
     p.set_defaults(fn=cmd_report)
+
+    p = sub.add_parser("publish", help="add the latest run to runs/ (and its audio to a "
+                                       "release) for the published site")
+    p.add_argument("layers", nargs="+", choices=["L1", "L2", "L3"])
+    p.add_argument("--from", dest="src", help="publish this run JSON instead of latest.json")
+    p.add_argument("--no-audio", action="store_true", help="skip the audio release")
+    p.set_defaults(fn=cmd_publish)
+
+    p = sub.add_parser("site", help="build the published report site from runs/")
+    p.add_argument("--out", help="output directory (default: site/)")
+    p.set_defaults(fn=cmd_site)
 
     args = ap.parse_args(argv)
     # Chunk text is full of Unicode; a Windows console defaults to cp1252.
