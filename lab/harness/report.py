@@ -366,7 +366,8 @@ def runs_table(history: dict[str, list[dict[str, Any]]], repo_url: str | None) -
 
 def corpus_html(run: dict[str, Any]) -> str:
     sources = (run.get("index") or {}).get("sources") or {}
-    return ", ".join(f"{e(k)} <code>{e(v[:7])}</code>" for k, v in sources.items())
+    # A partial index (CI's) lists every configured source; unindexed ones have no SHA.
+    return ", ".join(f"{e(k)} <code>{e(v[:7])}</code>" for k, v in sources.items() if v)
 
 
 def build(cfg: LabConfig, out: Path = OUT,

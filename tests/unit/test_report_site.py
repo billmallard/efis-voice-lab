@@ -53,3 +53,8 @@ def test_single_run_has_no_history_section(tmp_path):
     page = report.build(config.load(), tmp_path, history=history,
                         audio=lambda src: None).read_text(encoding="utf-8")
     assert "<h2>History</h2>" not in page and "<h2>Runs</h2>" in page
+
+
+def test_corpus_line_skips_unindexed_sources():
+    run = {"index": {"sources": {"a/b@main": "0123456789", "c/d@main": None}}}
+    assert report.corpus_html(run) == "a/b@main <code>0123456</code>"
