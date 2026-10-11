@@ -18,6 +18,12 @@ The browser demo is `uv run lab serve-voice`, served at http://localhost:7860 (c
 SmallWebRTC). The maintainer talked to it on 2026-10-11, which was M5's acceptance test.
 `uv run lab report` writes the all-layers HTML report to `results/report/index.html`.
 
+**The published report** (D1) is https://efis-voice-lab.pages.dev, built by CI from
+`runs/`. After a full run worth showing, publish it from this machine:
+`uv run lab publish L1 L2 L3` (L3 audio goes to a `audio-L3-<stamp>` release), then commit
+`runs/` and push. Branches deploy to `<branch>.efis-voice-lab.pages.dev`. Publish full runs
+only: a slice skews the trend lines. Details in [notes/D1.md](notes/D1.md).
+
 **Next:** the maintainer hasn't chosen. The options offered were:
 - **D1:** publish `lab report` to Cloudflare Pages from CI. This was recommended first,
   because it is the public portfolio piece.
