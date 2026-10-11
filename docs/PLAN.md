@@ -353,13 +353,18 @@ runways and squawk codes.
   with AM demodulation on 25 kHz (and 8.33 kHz) channels across 118–137 MHz. Use
   `rtl_airband`, `rtl_fm` or SoapySDR, one or more channels at once. Squelch and carrier
   detection mark where each transmission starts and ends.
-- **Network streams.** Public ATC feeds such as LiveATC.net are the easy way to get busy
-  frequencies, but their audio is LiveATC's copyright and their terms restrict derivative
-  use. Automated transcription of their streams needs written permission first; until
-  then they are off the default path. The ingest takes a generic stream URL so that an
-  owned feed (one of our SDRs, served over the network) works the same way.
-- **Recorded files.** These feed the golden set and the CI runs: public corpora plus our own
-  hand-transcribed SDR recordings.
+- **Network streams.** Our own SDR served over the network (for example a receiver near
+  a busier airport), so the ingest takes a generic stream URL. Third-party feeds are not a
+  live input.
+- **Recorded files.** These feed the golden set, any fine-tuning, and the CI runs:
+  - public ATC corpora (ATCOSIM, the ATCO2 test subset, UWB-ATCC) and any comparable sets
+    we find;
+  - our own hand-transcribed SDR recordings, which are the US-accent set.
+
+  LiveATC.net archives would only ever be **training and evaluation data**, never a live
+  input. Their audio is LiveATC's copyright and their terms restrict derivative use, so
+  using it needs their written permission first. It's optional: the corpora and our SDR
+  cover the need.
 
 **Pipeline:** source → transmission segmentation (squelch plus VAD; a transmission is the
 unit, not a sentence) → STT → aviation normalizer → optional entity extraction → transcript
@@ -397,7 +402,7 @@ candidate box and publish WER, CER-E, latency, power draw and thermals side by s
 
 **Milestones:**
 - **P2.0 spike + decision points:** one SDR channel and one recorded file through two or
-  three candidate models; check LiveATC's terms. Decide the default source, the model
+  three candidate models; survey ATC corpora and their licenses. Decide the model
   shortlist and the segmentation approach.
 - **P2.1 ingest:** SDR and stream inputs, segmentation, transcript feed. **Accept:** a live
   local frequency produces one transcript line per transmission.
